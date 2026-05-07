@@ -12,8 +12,7 @@ class BusinessController extends Controller
      */
     public function index()
     {
-        $businesses = Business::latest()->get();
-
+        $businesses = Business::all();
         return view('businesses.index', compact('businesses'));
     }
 

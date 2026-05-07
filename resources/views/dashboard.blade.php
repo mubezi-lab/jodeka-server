@@ -1,21 +1,66 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
-    </x-slot>
+@extends('layouts.admin')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
+@section('title', 'Dashboard')
 
-                    <p>Business: {{ auth()->user()->business->name ?? 'No Business Assigned' }}</p>
+@section('content')
 
-                    {{ __("You're logged in!") }}
+    <div class="space-y-6">
 
-                </div>
-            </div>
+        <!-- ACTION BUTTONS -->
+        <div class="flex flex-wrap gap-3">
+
+            <a href="{{ route('users.create') }}"
+                class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">
+                + Add User
+            </a>
+
+            <a href="{{ route('products.create') }}"
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+                + Add Product
+            </a>
+
+            <a href="{{ route('purchases.create') }}"
+                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
+                + Add Purchase
+            </a>
+
+            <a href="{{ route('livestocks.create') }}"
+                class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm">
+                + Add Livestock
+            </a>
+
+            <a href="{{ route('businesses.create') }}"
+                class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm">
+                + Add Business
+            </a>
+
         </div>
+
+        <!-- SUMMARY CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            <div class="bg-white p-4 rounded-xl shadow">
+                <p class="text-sm text-gray-500">Products</p>
+                <h2 class="text-2xl font-bold mt-1">0</h2>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow">
+                <p class="text-sm text-gray-500">Stock Items</p>
+                <h2 class="text-2xl font-bold mt-1">0</h2>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow">
+                <p class="text-sm text-gray-500">Purchases</p>
+                <h2 class="text-2xl font-bold mt-1">TZS 0</h2>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow">
+                <p class="text-sm text-gray-500">Livestock</p>
+                <h2 class="text-2xl font-bold mt-1">0</h2>
+            </div>
+
+        </div>
+
     </div>
-</x-app-layout>
+
+@endsection

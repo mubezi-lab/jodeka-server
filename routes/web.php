@@ -9,6 +9,8 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\LivestockController;
 use App\Http\Controllers\LivestockLogController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ExpenseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -110,6 +112,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('stocks.data');
 
     Route::get('/reports/monthly', [ReportController::class, 'monthly']);
+
+    Route::resource('users', UserController::class);
+Route::resource('expenses', ExpenseController::class);
 
 });
 
