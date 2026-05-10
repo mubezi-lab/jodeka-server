@@ -1,4 +1,5 @@
-name: Deploy Laravel
+```yaml
+name: Deploy to VPS
 
 on:
   push:
@@ -11,15 +12,12 @@ jobs:
 
     steps:
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@master
         with:
-          host: 164.90.173.97
+          host: 24.199.92.18
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/jodeka-server
-            git pull origin main
-            composer install --no-dev --optimize-autoloader
-            php artisan migrate --force
-            php artisan optimize:clear
-            npm run build
+            ./deploy.sh
+```
