@@ -46,6 +46,8 @@
                         <label class="block font-medium">Package Type</label>
                         <select name="package_type" class="w-full border rounded p-2">
                             <option value="Crate" {{ $product->package_type == 'Crate' ? 'selected' : '' }}>Crate</option>
+                            <option value="Carton" {{ $product->package_type == 'Carton' ? 'selected' : '' }}>Carton
+                            </option>
                             <option value="Box" {{ $product->package_type == 'Box' ? 'selected' : '' }}>Box</option>
                             <option value="Tray" {{ $product->package_type == 'Tray' ? 'selected' : '' }}>Tray</option>
                             <option value="Bundle" {{ $product->package_type == 'Bundle' ? 'selected' : '' }}>Bundle
