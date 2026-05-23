@@ -86,6 +86,13 @@
 
                 </a>
 
+                <a href="{{ route('users.index') }}" class="block px-4 py-3 rounded transition
+                    {{ request()->routeIs('users.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+
+                    Users
+
+                </a>
+
             </nav>
 
         </aside>

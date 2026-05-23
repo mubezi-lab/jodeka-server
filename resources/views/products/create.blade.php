@@ -8,8 +8,7 @@
     <div class="py-6">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
 
-            <form method="POST" action="{{ route('products.store') }}" 
-                  class="bg-white p-6 shadow rounded space-y-6">
+            <form method="POST" action="{{ route('products.store') }}" class="bg-white p-6 shadow rounded space-y-6">
                 @csrf
 
                 {{-- Product Info --}}
@@ -18,10 +17,8 @@
                     {{-- Product Name --}}
                     <div>
                         <label class="block font-medium">Product Name</label>
-                        <input type="text" name="name" 
-                               value="{{ old('name') }}" 
-                               placeholder="e.g. Soda, Jobo"
-                               class="w-full border rounded p-2">
+                        <input type="text" name="name" value="{{ old('name') }}" placeholder="e.g. Soda, Jobo"
+                            class="w-full border rounded p-2">
                         @error('name')
                             <p class="text-red-500 text-sm">{{ $message }}</p>
                         @enderror
@@ -30,10 +27,8 @@
                     {{-- Category --}}
                     <div>
                         <label class="block font-medium">Category</label>
-                        <input type="text" name="category" 
-                               value="{{ old('category') }}" 
-                               placeholder="e.g. Soft Drinks"
-                               class="w-full border rounded p-2">
+                        <input type="text" name="category" value="{{ old('category') }}" placeholder="e.g. Soft Drinks"
+                            class="w-full border rounded p-2">
                         @error('category')
                             <p class="text-red-500 text-sm">{{ $message }}</p>
                         @enderror
@@ -50,6 +45,7 @@
                         <select name="package_type" class="w-full border rounded p-2">
                             <option value="">Select Package</option>
                             <option value="Crate" {{ old('package_type') == 'Crate' ? 'selected' : '' }}>Crate</option>
+                            <option value="Carton" {{ old('package_type') == 'Carton' ? 'selected' : '' }}>Carton</option>
                             <option value="Box" {{ old('package_type') == 'Box' ? 'selected' : '' }}>Box</option>
                             <option value="Tray" {{ old('package_type') == 'Tray' ? 'selected' : '' }}>Tray</option>
                             <option value="Bundle" {{ old('package_type') == 'Bundle' ? 'selected' : '' }}>Bundle</option>
@@ -66,10 +62,8 @@
                         <label class="block font-medium">
                             Units per Package
                         </label>
-                        <input type="number" name="units_per_package" 
-                               value="{{ old('units_per_package') }}"
-                               placeholder="e.g. 24, 30"
-                               class="w-full border rounded p-2">
+                        <input type="number" name="units_per_package" value="{{ old('units_per_package') }}"
+                            placeholder="e.g. 24, 30" class="w-full border rounded p-2">
                         @error('units_per_package')
                             <p class="text-red-500 text-sm">{{ $message }}</p>
                         @enderror
@@ -85,11 +79,9 @@
                         <label class="block font-medium">
                             Buy Price (per package)
                         </label>
-                        <input type="number" step="0.01" 
-                               name="buy_price_per_package"
-                               value="{{ old('buy_price_per_package') }}"
-                               placeholder="e.g. 44000"
-                               class="w-full border rounded p-2">
+                        <input type="number" step="0.01" name="buy_price_per_package"
+                            value="{{ old('buy_price_per_package') }}" placeholder="e.g. 44000"
+                            class="w-full border rounded p-2">
                         @error('buy_price_per_package')
                             <p class="text-red-500 text-sm">{{ $message }}</p>
                         @enderror
@@ -100,11 +92,9 @@
                         <label class="block font-medium">
                             Sell Price (per unit)
                         </label>
-                        <input type="number" step="0.01" 
-                               name="sell_price_per_unit"
-                               value="{{ old('sell_price_per_unit') }}"
-                               placeholder="e.g. 2000"
-                               class="w-full border rounded p-2">
+                        <input type="number" step="0.01" name="sell_price_per_unit"
+                            value="{{ old('sell_price_per_unit') }}" placeholder="e.g. 2000"
+                            class="w-full border rounded p-2">
                         @error('sell_price_per_unit')
                             <p class="text-red-500 text-sm">{{ $message }}</p>
                         @enderror
