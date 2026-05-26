@@ -60,4 +60,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Business::class);
     }
+
+    public function toilet()
+    {
+        return $this->hasOne(Toilet::class);
+    }
 }

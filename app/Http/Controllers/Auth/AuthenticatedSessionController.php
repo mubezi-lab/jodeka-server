@@ -12,7 +12,7 @@ use Illuminate\View\View;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
+     * Display login view.
      */
     public function create(): View
     {
@@ -20,19 +20,132 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming authentication request.
+     * Handle login.
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        /*
+        |--------------------------------------------------------------------------
+        | AUTHENTICATE USER
+        |--------------------------------------------------------------------------
+        */
+
         $request->authenticate();
+
+        /*
+        |--------------------------------------------------------------------------
+        | REGENERATE SESSION
+        |--------------------------------------------------------------------------
+        */
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        /*
+        |--------------------------------------------------------------------------
+        | CURRENT USER
+        |--------------------------------------------------------------------------
+        */
+
+        $user = Auth::user();
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $user->role &&
+            strtolower($user->role->name) === 'admin'
+        ) {
+
+            return redirect('/dashboard');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | MANAGER
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $user->role &&
+            strtolower($user->role->name) === 'manager'
+        ) {
+
+            return redirect('/manager');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMPLOYEE
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $user->role &&
+            strtolower($user->role->name) === 'employee'
+        ) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | TOILET EMPLOYEE
+            |--------------------------------------------------------------------------
+            */
+
+            if ($user->toilet) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | STENDI
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    strtolower($user->toilet->name) === 'stendi'
+                ) {
+
+                    return redirect()->route(
+                        'stendi.dashboard'
+                    );
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | SOKONI
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    strtolower($user->toilet->name) === 'sokoni'
+                ) {
+
+                    return redirect()->route(
+                        'sokoni.dashboard'
+                    );
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NORMAL EMPLOYEE
+            |--------------------------------------------------------------------------
+            */
+
+            return redirect('/employee');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | DEFAULT
+        |--------------------------------------------------------------------------
+        */
+
+        return redirect('/');
     }
 
     /**
-     * Destroy an authenticated session.
+     * Logout.
      */
     public function destroy(Request $request): RedirectResponse
     {

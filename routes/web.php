@@ -13,6 +13,7 @@ use App\Http\Controllers\LivestockLogController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\ToiletAttendantController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,23 +22,36 @@ use App\Http\Controllers\ExpenseController;
 */
 
 Route::get('/', function () {
+
     return view('auth.login');
+
 })->name('home');
 
 /*
 |--------------------------------------------------------------------------
-| Dashboard
+| ADMIN DASHBOARD
 |--------------------------------------------------------------------------
 */
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware([
+    'auth',
+    'verified',
+    'role:admin'
+])->group(function () {
+
+    Route::get('/dashboard', function () {
+
+        return view('dashboard');
+
+    })->name('dashboard');
+});
 
 /*
 |--------------------------------------------------------------------------
-| Profile (Authenticated Users)
+| Profile Routes
 |--------------------------------------------------------------------------
 */
+
 Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])
@@ -55,96 +69,58 @@ Route::middleware('auth')->group(function () {
 | Role Test Routes
 |--------------------------------------------------------------------------
 */
+
 Route::middleware(['auth', 'role:admin'])
-    ->get('/admin', fn () => "Admin Only");
+    ->get('/admin', fn () => 'Admin Only');
 
 Route::middleware(['auth', 'role:manager'])
-    ->get('/manager', fn () => "Manager Only");
+    ->get('/manager', fn () => 'Manager Only');
 
 Route::middleware(['auth', 'role:employee'])
-    ->get('/employee', fn () => "Employee Only");
+    ->get('/employee', fn () => 'Employee Only');
 
 /*
 |--------------------------------------------------------------------------
-| Admin Routes (Main System)
+| Admin Routes
 |--------------------------------------------------------------------------
 */
+
 Route::middleware(['auth', 'role:admin'])->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Core Modules
-    |--------------------------------------------------------------------------
-    */
     Route::resource('businesses', BusinessController::class);
+
     Route::resource('products', ProductController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Stock Module
-    |--------------------------------------------------------------------------
-    */
     Route::resource('stocks', StockController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Purchase Module
-    |--------------------------------------------------------------------------
-    */
     Route::resource('purchases', PurchaseController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | 🐔 Livestock Module
-    |--------------------------------------------------------------------------
-    */
-
-    // Livestock CRUD
     Route::resource('livestocks', LivestockController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | 🔥 Livestock Logs (EXPENSE + MORTALITY)
-    |--------------------------------------------------------------------------
-    */
+    Route::get('/livestock-logs/create', [
+        LivestockLogController::class,
+        'create'
+    ])->name('livestock-logs.create');
 
-    // CREATE PAGE
-    Route::get('/livestock-logs/create', [LivestockLogController::class, 'create'])
-        ->name('livestock-logs.create');
+    Route::post('/livestock-logs', [
+        LivestockLogController::class,
+        'store'
+    ])->name('livestock-logs.store');
 
-    // STORE
-    Route::post('/livestock-logs', [LivestockLogController::class, 'store'])
-        ->name('livestock-logs.store');
+    Route::get('/stock-data', [
+        StockController::class,
+        'getStockData'
+    ])->name('stocks.data');
 
-    /*
-    |--------------------------------------------------------------------------
-    | AJAX
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/stock-data', [StockController::class, 'getStockData'])
-        ->name('stocks.data');
+    Route::get('/reports/monthly', [
+        ReportController::class,
+        'monthly'
+    ])->name('reports.monthly');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Reports
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/reports/monthly', [ReportController::class, 'monthly'])
-        ->name('reports.monthly');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Users & Expenses
-    |--------------------------------------------------------------------------
-    */
     Route::resource('users', UserController::class);
+
     Route::resource('expenses', ExpenseController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | 🗄️ Database Tables Explorer
-    |--------------------------------------------------------------------------
-    */
     Route::get('/database/tables', function () {
 
         $database = DB::getDatabaseName();
@@ -181,7 +157,160 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         return view('database.tables', compact('result'));
 
     })->name('database.tables');
+});
 
+/*
+|--------------------------------------------------------------------------
+| Toilet Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'role:employee'
+])->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | STENDI DASHBOARD
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/stendi', [
+        ToiletAttendantController::class,
+        'dashboard'
+    ])->name('stendi.dashboard');
+
+    /*
+    |--------------------------------------------------------------------------
+    | SOKONI DASHBOARD
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/sokoni', [
+        ToiletAttendantController::class,
+        'dashboard'
+    ])->name('sokoni.dashboard');
+
+    /*
+    |--------------------------------------------------------------------------
+    | STENDI ADD ENTRY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/stendi/add-entry', [
+        ToiletAttendantController::class,
+        'createEntry'
+    ])->name('stendi.entry.create');
+
+    Route::post('/stendi/add-entry', [
+        ToiletAttendantController::class,
+        'storeEntry'
+    ])->name('stendi.entry.store');
+
+    /*
+    |--------------------------------------------------------------------------
+    | SOKONI ADD ENTRY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/sokoni/add-entry', [
+        ToiletAttendantController::class,
+        'createEntry'
+    ])->name('sokoni.entry.create');
+
+    Route::post('/sokoni/add-entry', [
+        ToiletAttendantController::class,
+        'storeEntry'
+    ])->name('sokoni.entry.store');
+
+    /*
+    |--------------------------------------------------------------------------
+    | STENDI EXPENSES PAGE
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/stendi/expenses', [
+        ToiletAttendantController::class,
+        'expenses'
+    ])->name('stendi.expenses');
+
+    /*
+    |--------------------------------------------------------------------------
+    | SOKONI EXPENSES PAGE
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/sokoni/expenses', [
+        ToiletAttendantController::class,
+        'expenses'
+    ])->name('sokoni.expenses');
+
+    /*
+    |--------------------------------------------------------------------------
+    | STORE EXPENSE
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post('/expense/store/{entry_date?}', [
+        ToiletAttendantController::class,
+        'storeExpense'
+    ])->name('expense.store');
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE EXPENSE
+    |--------------------------------------------------------------------------
+    */
+
+    Route::put('/expense/update/{id}', [
+        ToiletAttendantController::class,
+        'updateExpense'
+    ])->name('expense.update');
+
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE EXPENSE
+    |--------------------------------------------------------------------------
+    */
+
+    Route::delete('/expense/delete/{id}', [
+        ToiletAttendantController::class,
+        'deleteExpense'
+    ])->name('expense.delete');
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE DAILY ENTRY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::put('/entry/update/{id}', [
+        ToiletAttendantController::class,
+        'updateEntry'
+    ])->name('entry.update');
+
+    /*
+    |--------------------------------------------------------------------------
+    | STENDI REPORTS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/stendi/reports', [
+        ToiletAttendantController::class,
+        'reports'
+    ])->name('stendi.reports');
+
+    /*
+    |--------------------------------------------------------------------------
+    | SOKONI REPORTS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/sokoni/reports', [
+        ToiletAttendantController::class,
+        'reports'
+    ])->name('sokoni.reports');
 });
 
 /*
@@ -189,4 +318,5 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 | Auth Routes
 |--------------------------------------------------------------------------
 */
+
 require __DIR__.'/auth.php';

@@ -5,9 +5,20 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
-                    </a>
+@php
+    $homePath = request()->segment(1);
+@endphp
+
+<a href="{{ url($homePath) }}"
+   class="flex items-center">
+
+    <img 
+        src="{{ asset('images/jodeka-logo.png') }}" 
+        alt="Logo"
+        class="h-14 w-14 object-contain animate-spin-slow"
+    >
+
+</a>
                 </div>
 
                 <!-- Navigation Links -->
@@ -98,3 +109,18 @@
         </div>
     </div>
 </nav>
+
+<style>
+@keyframes spinSlow {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin-slow {
+    animation: spinSlow 8s linear infinite;
+}
+</style>
