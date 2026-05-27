@@ -6,20 +6,31 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('toilets', function (Blueprint $table) {
             $table->id();
+
+            $table->string('name');
+
+            $table->enum('type', ['private', 'council']);
+
+            $table->string('location')->nullable();
+
+            $table->decimal('monthly_fixed_fee', 12, 2)->default(0);
+
+            $table->decimal('council_percentage', 5, 2)->default(40);
+
+            $table->decimal('office_percentage', 5, 2)->default(60);
+
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+
+            $table->boolean('is_active')->default(true);
+
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('toilets');
