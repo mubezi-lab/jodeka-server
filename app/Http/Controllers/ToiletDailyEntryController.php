@@ -87,4 +87,21 @@ class ToiletDailyEntryController extends Controller
             ->back()
             ->with('success', 'Sale added successfully.');
     }
+
+    public function update(Request $request, $id)
+{
+    $entry = ToiletDailyEntry::findOrFail($id);
+
+    $request->validate([
+        'opening_balance' => 'required|numeric',
+        'closing_balance' => 'required|numeric',
+    ]);
+
+    $entry->update([
+        'opening_balance' => $request->opening_balance,
+        'closing_balance' => $request->closing_balance,
+    ]);
+
+    return back()->with('success', 'Daily entry updated successfully.');
+}
 }

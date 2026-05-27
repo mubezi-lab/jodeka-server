@@ -169,9 +169,145 @@
 
             </div>
 
+            {{-- =========================================
+DAILY ENTRY TABLE
+========================================== --}}
+
+<div class="bg-white shadow-sm rounded-3xl overflow-hidden border border-gray-100 mb-6">
+
+    {{-- TABLE HEADER --}}
+
+    <div class="px-5 py-4 border-b border-gray-100">
+
+        <h3 class="text-lg font-bold text-gray-800">
+
+            Daily Summary
+
+        </h3>
+
+    </div>
+
+    {{-- TABLE --}}
+
+    <div class="overflow-x-auto">
+
+        <table class="w-full min-w-[700px]">
+
+            {{-- TABLE HEAD --}}
+
+            <thead class="bg-gray-50">
+
+                <tr>
+
+                    <th class="px-5 py-4 text-left text-xs font-bold text-gray-500 uppercase">
+
+                        Opening
+
+                    </th>
+
+                    <th class="px-5 py-4 text-left text-xs font-bold text-gray-500 uppercase">
+
+                        Closing
+
+                    </th>
+
+                    <th class="px-5 py-4 text-left text-xs font-bold text-gray-500 uppercase">
+
+                        Revenue
+
+                    </th>
+
+                    <th class="px-5 py-4 text-left text-xs font-bold text-gray-500 uppercase">
+
+                        Expenses
+
+                    </th>
+
+                    <th class="px-5 py-4 text-center text-xs font-bold text-gray-500 uppercase">
+
+                        Actions
+
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            {{-- TABLE BODY --}}
+
+            <tbody>
+
+                <tr class="border-t border-gray-100 hover:bg-gray-50 transition">
+
+                    {{-- OPENING --}}
+
+                    <td class="px-5 py-5 text-sm font-semibold text-gray-700">
+
+                        TZS {{ number_format($entry->opening_balance ?? 0) }}
+
+                    </td>
+
+                    {{-- CLOSING --}}
+
+                    <td class="px-5 py-5 text-sm font-semibold text-blue-600">
+
+                        TZS {{ number_format($entry->closing_balance ?? 0) }}
+
+                    </td>
+
+                    {{-- REVENUE --}}
+
+                    <td class="px-5 py-5 text-sm font-semibold text-green-600">
+
+                        TZS {{ number_format($entry->total_revenue ?? 0) }}
+
+                    </td>
+
+                    {{-- EXPENSES --}}
+
+                    <td class="px-5 py-5 text-sm font-semibold text-red-500">
+
+                        TZS {{ number_format($entry->total_expenses ?? 0) }}
+
+                    </td>
+
+                    {{-- ACTIONS --}}
+
+                    <td class="px-5 py-5">
+
+                        <div class="flex items-center justify-center">
+
+                            <button
+                                onclick="openDailyEditModal(
+                                    {{ $entry->id }},
+                                    {{ $entry->opening_balance ?? 0 }},
+                                    {{ $entry->closing_balance ?? 0 }}
+                                )"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition">
+
+                                Edit
+
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
         </div>
 
     </div>
+
 
     {{-- =========================================
     EDIT MODAL
@@ -264,6 +400,94 @@
         </div>
 
     </div>
+
+    {{-- =========================================
+DAILY ENTRY EDIT MODAL
+========================================== --}}
+
+<div id="dailyEditModal"
+    class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+
+    <div class="bg-white w-full max-w-md rounded-3xl p-6">
+
+        {{-- HEADER --}}
+
+        <div class="flex items-center justify-between mb-6">
+
+            <h3 class="text-xl font-bold">
+
+                Edit Daily Entry
+
+            </h3>
+
+            <button onclick="closeDailyEditModal()"
+                class="text-gray-400 hover:text-red-500 text-3xl leading-none">
+
+                &times;
+
+            </button>
+
+        </div>
+
+        {{-- FORM --}}
+
+        <form id="dailyEditForm" method="POST">
+
+            @csrf
+            @method('PUT')
+
+            {{-- OPENING --}}
+
+            <div class="mb-4">
+
+                <label class="block mb-2 font-semibold text-sm">
+
+                    Opening Balance
+
+                </label>
+
+                <input type="number"
+                    step="0.01"
+                    id="editOpeningBalance"
+                    name="opening_balance"
+                    class="w-full border-gray-300 rounded-2xl h-12 px-4 text-sm"
+                    required>
+
+            </div>
+
+            {{-- CLOSING --}}
+
+            <div class="mb-6">
+
+                <label class="block mb-2 font-semibold text-sm">
+
+                    Closing Balance
+
+                </label>
+
+                <input type="number"
+                    step="0.01"
+                    id="editClosingBalance"
+                    name="closing_balance"
+                    class="w-full border-gray-300 rounded-2xl h-12 px-4 text-sm"
+                    required>
+
+            </div>
+
+            {{-- SUBMIT --}}
+
+            <button type="submit"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 rounded-2xl font-semibold text-sm">
+
+                Update Entry
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
 
 
     {{-- =========================================
@@ -573,15 +797,40 @@
 
         function openExpenseEditFromReport(id, name, amount, note) {
 
-    // Funga receipt modal kwanza
-    closeTodayReport();
+            // Funga receipt modal kwanza
+            closeTodayReport();
 
-    // Fungua edit modal baada ya muda mfupi
-    setTimeout(() => {
+            // Fungua edit modal baada ya muda mfupi
+            setTimeout(() => {
 
-        openEditModal(id, name, amount, note);
+                openEditModal(id, name, amount, note);
 
-    }, 200);
+            }, 200);
+        }
+
+        function openDailyEditModal(id, opening, closing) {
+
+    const modal = document.getElementById('dailyEditModal');
+
+    modal.classList.remove('hidden');
+
+    modal.classList.add('flex');
+
+    document.getElementById('editOpeningBalance').value = opening;
+
+    document.getElementById('editClosingBalance').value = closing;
+
+    document.getElementById('dailyEditForm').action =
+        '{{ url("/daily-entry/update") }}/' + id;
+}
+
+function closeDailyEditModal() {
+
+    const modal = document.getElementById('dailyEditModal');
+
+    modal.classList.add('hidden');
+
+    modal.classList.remove('flex');
 }
 
     </script>

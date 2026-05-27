@@ -14,6 +14,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ToiletAttendantController;
+use App\Http\Controllers\ToiletController;
+use App\Http\Controllers\ToiletDailyEntryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -120,6 +122,17 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('users', UserController::class);
 
     Route::resource('expenses', ExpenseController::class);
+
+    /*
+    |--------------------------------------------------------------------------
+    | TOILETS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/toilets', [
+        ToiletController::class,
+        'index'
+    ])->name('toilets.index');
 
     Route::get('/database/tables', function () {
 
@@ -311,6 +324,16 @@ Route::middleware([
         ToiletAttendantController::class,
         'reports'
     ])->name('sokoni.reports');
+
+        /*
+    |--------------------------------------------------------------------------
+    | UPDATE DAILY ENTRY CLOSING AND OPENING BALANCES
+    |--------------------------------------------------------------------------
+    */
+    Route::put('/daily-entry/update/{id}',
+    [ToiletDailyEntryController::class, 'update'])
+    ->name('daily-entry.update');
+
 });
 
 /*

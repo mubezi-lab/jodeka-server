@@ -44,12 +44,16 @@
             <!-- NAVIGATION -->
             <nav class="p-4 space-y-2 text-sm">
 
+                {{-- DASHBOARD --}}
+
                 <a href="{{ route('dashboard') }}" class="block px-4 py-3 rounded transition
                     {{ request()->routeIs('dashboard') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
 
                     Dashboard
 
                 </a>
+
+                {{-- BUSINESSES --}}
 
                 <a href="{{ route('businesses.index') }}" class="block px-4 py-3 rounded transition
                     {{ request()->routeIs('businesses.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
@@ -58,12 +62,16 @@
 
                 </a>
 
+                {{-- PRODUCTS --}}
+
                 <a href="{{ route('products.index') }}" class="block px-4 py-3 rounded transition
                     {{ request()->routeIs('products.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
 
                     Products
 
                 </a>
+
+                {{-- STOCK --}}
 
                 <a href="{{ route('stocks.index') }}" class="block px-4 py-3 rounded transition
                     {{ request()->routeIs('stocks.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
@@ -72,6 +80,8 @@
 
                 </a>
 
+                {{-- PURCHASES --}}
+
                 <a href="{{ route('purchases.index') }}" class="block px-4 py-3 rounded transition
                     {{ request()->routeIs('purchases.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
 
@@ -79,12 +89,25 @@
 
                 </a>
 
+                {{-- LIVESTOCK --}}
+
                 <a href="{{ route('livestocks.index') }}" class="block px-4 py-3 rounded transition
                     {{ request()->routeIs('livestocks.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
 
                     Livestock
 
                 </a>
+
+                {{-- TOILETS --}}
+
+                <a href="{{ route('toilets.index') }}" class="block px-4 py-3 rounded transition
+                    {{ request()->routeIs('toilets.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+
+                    Toilets
+
+                </a>
+
+                {{-- USERS --}}
 
                 <a href="{{ route('users.index') }}" class="block px-4 py-3 rounded transition
                     {{ request()->routeIs('users.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
