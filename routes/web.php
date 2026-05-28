@@ -4,22 +4,35 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
+
 use App\Http\Controllers\BusinessController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\PurchaseController;
+
 use App\Http\Controllers\LivestockController;
 use App\Http\Controllers\LivestockLogController;
-use App\Http\Controllers\ReportController;
+
 use App\Http\Controllers\UserController;
+
 use App\Http\Controllers\ExpenseController;
-use App\Http\Controllers\ToiletAttendantController;
+use App\Http\Controllers\IncomeController;
+
+use App\Http\Controllers\LoanController;
+use App\Http\Controllers\LoanPaymentController;
+
+use App\Http\Controllers\SavingController;
+
+use App\Http\Controllers\ReportController;
+
 use App\Http\Controllers\ToiletController;
+use App\Http\Controllers\ToiletAttendantController;
 use App\Http\Controllers\ToiletDailyEntryController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| WEB ROUTES
 |--------------------------------------------------------------------------
 */
 
@@ -41,34 +54,39 @@ Route::middleware([
     'role:admin'
 ])->group(function () {
 
-    Route::get('/dashboard', function () {
-
-        return view('dashboard');
-
-    })->name('dashboard');
+    Route::get('/dashboard', [
+        DashboardController::class,
+        'index'
+    ])->name('dashboard');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Profile Routes
+| PROFILE ROUTES
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth')->group(function () {
 
-    Route::get('/profile', [ProfileController::class, 'edit'])
-        ->name('profile.edit');
+    Route::get('/profile', [
+        ProfileController::class,
+        'edit'
+    ])->name('profile.edit');
 
-    Route::patch('/profile', [ProfileController::class, 'update'])
-        ->name('profile.update');
+    Route::patch('/profile', [
+        ProfileController::class,
+        'update'
+    ])->name('profile.update');
 
-    Route::delete('/profile', [ProfileController::class, 'destroy'])
-        ->name('profile.destroy');
+    Route::delete('/profile', [
+        ProfileController::class,
+        'destroy'
+    ])->name('profile.destroy');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Role Test Routes
+| ROLE TEST ROUTES
 |--------------------------------------------------------------------------
 */
 
@@ -83,21 +101,75 @@ Route::middleware(['auth', 'role:employee'])
 
 /*
 |--------------------------------------------------------------------------
-| Admin Routes
+| ADMIN ROUTES
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware([
+    'auth',
+    'role:admin'
+])->group(function () {
 
-    Route::resource('businesses', BusinessController::class);
+    /*
+    |--------------------------------------------------------------------------
+    | BUSINESSES
+    |--------------------------------------------------------------------------
+    */
 
-    Route::resource('products', ProductController::class);
+    Route::resource(
+        'businesses',
+        BusinessController::class
+    );
 
-    Route::resource('stocks', StockController::class);
+    /*
+    |--------------------------------------------------------------------------
+    | PRODUCTS
+    |--------------------------------------------------------------------------
+    */
 
-    Route::resource('purchases', PurchaseController::class);
+    Route::resource(
+        'products',
+        ProductController::class
+    );
 
-    Route::resource('livestocks', LivestockController::class);
+    /*
+    |--------------------------------------------------------------------------
+    | STOCKS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'stocks',
+        StockController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | PURCHASES
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'purchases',
+        PurchaseController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | LIVESTOCKS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'livestocks',
+        LivestockController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | LIVESTOCK LOGS
+    |--------------------------------------------------------------------------
+    */
 
     Route::get('/livestock-logs/create', [
         LivestockLogController::class,
@@ -109,19 +181,155 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         'store'
     ])->name('livestock-logs.store');
 
+    /*
+    |--------------------------------------------------------------------------
+    | STOCK AJAX DATA
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/stock-data', [
         StockController::class,
         'getStockData'
     ])->name('stocks.data');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REPORTS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/reports', [
+        ReportController::class,
+        'index'
+    ])->name('reports.index');
+
+    Route::get('/reports/daily', [
+        ReportController::class,
+        'daily'
+    ])->name('reports.daily');
 
     Route::get('/reports/monthly', [
         ReportController::class,
         'monthly'
     ])->name('reports.monthly');
 
-    Route::resource('users', UserController::class);
+    Route::get('/reports/yearly', [
+        ReportController::class,
+        'yearly'
+    ])->name('reports.yearly');
 
-    Route::resource('expenses', ExpenseController::class);
+
+    /*
+    |--------------------------------------------------------------------------
+    | USERS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'users',
+        UserController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | COMPANY EXPENSES
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'company-expenses',
+        ExpenseController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | COMPANY INCOMES
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'company-incomes',
+        IncomeController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVINGS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'savings',
+        SavingController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVING DEPOSITS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/savings/{saving}/deposit', [
+
+        SavingController::class,
+        'depositForm'
+
+    ])->name('savings.deposit.form');
+
+    Route::post('/savings/{saving}/deposit', [
+
+        SavingController::class,
+        'depositStore'
+
+    ])->name('savings.deposit.store');
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVING WITHDRAWALS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/savings/{saving}/withdraw', [
+
+        SavingController::class,
+        'withdrawForm'
+
+    ])->name('savings.withdraw.form');
+
+    Route::post('/savings/{saving}/withdraw', [
+
+        SavingController::class,
+        'withdrawStore'
+
+    ])->name('savings.withdraw.store');
+
+    /*
+    |--------------------------------------------------------------------------
+    | LOANS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'loans',
+        LoanController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | LOAN PAYMENTS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post('/loans/{loan}/payments', [
+        LoanPaymentController::class,
+        'store'
+    ])->name('loan-payments.store');
+
+    Route::delete('/loan-payments/{payment}', [
+        LoanPaymentController::class,
+        'destroy'
+    ])->name('loan-payments.destroy');
 
     /*
     |--------------------------------------------------------------------------
@@ -133,6 +341,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ToiletController::class,
         'index'
     ])->name('toilets.index');
+
+    /*
+    |--------------------------------------------------------------------------
+    | DATABASE TABLES VIEWER
+    |--------------------------------------------------------------------------
+    */
 
     Route::get('/database/tables', function () {
 
@@ -167,14 +381,17 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             $result[$tableName] = $columns;
         }
 
-        return view('database.tables', compact('result'));
+        return view(
+            'database.tables',
+            compact('result')
+        );
 
     })->name('database.tables');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Toilet Routes
+| TOILET EMPLOYEE ROUTES
 |--------------------------------------------------------------------------
 */
 
@@ -239,7 +456,7 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
-    | STENDI EXPENSES PAGE
+    | STENDI EXPENSES
     |--------------------------------------------------------------------------
     */
 
@@ -250,7 +467,7 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
-    | SOKONI EXPENSES PAGE
+    | SOKONI EXPENSES
     |--------------------------------------------------------------------------
     */
 
@@ -261,7 +478,7 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
-    | STORE EXPENSE
+    | STORE TOILET EXPENSE
     |--------------------------------------------------------------------------
     */
 
@@ -272,7 +489,7 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
-    | UPDATE EXPENSE
+    | UPDATE TOILET EXPENSE
     |--------------------------------------------------------------------------
     */
 
@@ -283,7 +500,7 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
-    | DELETE EXPENSE
+    | DELETE TOILET EXPENSE
     |--------------------------------------------------------------------------
     */
 
@@ -325,20 +542,21 @@ Route::middleware([
         'reports'
     ])->name('sokoni.reports');
 
-        /*
+    /*
     |--------------------------------------------------------------------------
-    | UPDATE DAILY ENTRY CLOSING AND OPENING BALANCES
+    | UPDATE DAILY ENTRY BALANCES
     |--------------------------------------------------------------------------
     */
-    Route::put('/daily-entry/update/{id}',
-    [ToiletDailyEntryController::class, 'update'])
-    ->name('daily-entry.update');
 
+    Route::put('/daily-entry/update/{id}', [
+        ToiletDailyEntryController::class,
+        'update'
+    ])->name('daily-entry.update');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Auth Routes
+| AUTH ROUTES
 |--------------------------------------------------------------------------
 */
 

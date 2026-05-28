@@ -2,108 +2,288 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Business;
+use App\Models\Loan;
+use App\Models\Saving;
+use App\Models\Transaction;
+
 use Illuminate\Http\Request;
-use App\Models\Product;
-use App\Models\Purchase;
-use App\Models\Stock;
+
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReportController extends Controller
 {
-    public function monthly()
+    /*
+    |--------------------------------------------------------------------------
+    | REPORTS DASHBOARD
+    |--------------------------------------------------------------------------
+    */
+    public function index(Request $request)
     {
-        $from = request('from') ?? now()->startOfMonth();
-        $to = request('to') ?? now();
+        /*
+        |--------------------------------------------------------------------------
+        | FILTERS
+        |--------------------------------------------------------------------------
+        */
 
-        $products = Product::all();
+        $from = $request->from
+            ?? now()->startOfMonth()->toDateString();
 
-        $report = [];
+        $to = $request->to
+            ?? now()->toDateString();
 
-        $totalSales = 0;
-        $totalPurchase = 0;
-        $totalCostOfSold = 0;
+        $businessId = $request->business_id;
 
-        foreach ($products as $product) {
+        /*
+        |--------------------------------------------------------------------------
+        | INCOME QUERY
+        |--------------------------------------------------------------------------
+        */
 
-            // ✅ Opening Stock (last closing before period)
-            $opening = Stock::where('product_id', $product->id)
-                ->whereDate('date', '<', $from)
-                ->orderBy('date', 'desc')
-                ->value('closing_stock') ?? 0;
+        $incomeQuery = Transaction::where('type', 'income')
+            ->whereBetween('transaction_date', [$from, $to]);
 
-            // ✅ Purchases ndani ya period
-            $purchased = Purchase::where('product_id', $product->id)
-                ->whereBetween('date', [$from, $to])
-                ->sum('quantity') ?? 0;
+        /*
+        |--------------------------------------------------------------------------
+        | EXPENSE QUERY
+        |--------------------------------------------------------------------------
+        */
 
-            // ✅ Sold ndani ya period
-            $sold = Stock::where('product_id', $product->id)
-                ->whereBetween('date', [$from, $to])
-                ->sum('sold') ?? 0;
+        $expenseQuery = Transaction::where('type', 'expense')
+            ->whereBetween('transaction_date', [$from, $to]);
 
-            // ✅ Total available
-            $totalAvailable = $opening + $purchased;
+        /*
+        |--------------------------------------------------------------------------
+        | BUSINESS FILTER
+        |--------------------------------------------------------------------------
+        */
 
-            // ✅ Closing (calculated, not from DB)
-            $closing = $totalAvailable - $sold;
+        if ($businessId) {
 
-            // ✅ Prices
-            $sellPrice = $product->sell_price ?? 0;
-            $buyPrice = $product->buy_price ?? 0;
+            $incomeQuery->where(
+                'business_id',
+                $businessId
+            );
 
-            // ✅ Sales
-            $sales = $sold * $sellPrice;
-
-            // ✅ COST OF SOLD (VERY IMPORTANT FIX)
-            $costOfSold = 0;
-            if ($totalAvailable > 0) {
-                $costOfSold = ($sold / $totalAvailable) * ($purchased * $buyPrice);
-            }
-
-            // ✅ Profit
-            $profit = $sales - $costOfSold;
-
-            // ✅ Totals
-            $totalSales += $sales;
-            $totalPurchase += ($purchased * $buyPrice);
-            $totalCostOfSold += $costOfSold;
-
-            $report[] = [
-                'name' => $product->name,
-                'opening' => $opening,
-                'purchase' => $purchased,
-                'total' => $totalAvailable,
-                'closing' => $closing,
-                'sold' => $sold,
-                'price' => $sellPrice,
-                'total_price' => $sales,
-                'cost' => $costOfSold,
-                'profit' => $profit,
-            ];
+            $expenseQuery->where(
+                'business_id',
+                $businessId
+            );
         }
 
-    $data = [
-        'report' => $report,
-        'totalSales' => $totalSales,
-        'totalPurchase' => $totalPurchase,
-        'cash' => $totalSales,
+        /*
+        |--------------------------------------------------------------------------
+        | TOTALS
+        |--------------------------------------------------------------------------
+        */
 
-        // 🔥 mpya
-        'balance_due' => $totalSales,
-        'last_capital' => 0, // unaweza calculate later
-        'current_capital' => $totalSales - $totalCostOfSold,
-        'out_source' => 0,
-        'total_expenditure' => 0,
-        'seller' => 'Jackson',
-        'business' => 'Jodeka',
+        $totalIncome = $incomeQuery->sum('amount');
 
-        'loss' => $totalPurchase - $totalSales,
-        'from' => $from,
-        'to' => $to
-    ];
+        $totalExpenses = $expenseQuery->sum('amount');
 
-        $pdf = Pdf::loadView('reports.monthly_pdf', $data);
+        $netProfit = $totalIncome - $totalExpenses;
 
-        return $pdf->download('monthly-report.pdf');
+        /*
+        |--------------------------------------------------------------------------
+        | SAVINGS
+        |--------------------------------------------------------------------------
+        */
+
+        $savingsQuery = Saving::query();
+
+        if ($businessId) {
+
+            $savingsQuery->where(
+                'business_id',
+                $businessId
+            );
+        }
+
+        $totalSavings = $savingsQuery->sum('balance');
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOANS
+        |--------------------------------------------------------------------------
+        */
+
+        $loanQuery = Loan::query();
+
+        if ($businessId) {
+
+            $loanQuery->where(
+                'business_id',
+                $businessId
+            );
+        }
+
+        $totalLoans = $loanQuery->sum(
+            'remaining_amount'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | BUSINESSES
+        |--------------------------------------------------------------------------
+        */
+
+        $totalBusinesses = Business::count();
+
+        $businesses = Business::orderBy('name')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | TRANSACTIONS
+        |--------------------------------------------------------------------------
+        */
+
+        $transactions = Transaction::with('business')
+            ->whereBetween(
+                'transaction_date',
+                [$from, $to]
+            )
+            ->latest();
+
+        if ($businessId) {
+
+            $transactions->where(
+                'business_id',
+                $businessId
+            );
+        }
+
+        $transactions = $transactions->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | RETURN VIEW
+        |--------------------------------------------------------------------------
+        */
+
+        return view('reports.index', compact(
+
+            'totalIncome',
+
+            'totalExpenses',
+
+            'netProfit',
+
+            'totalSavings',
+
+            'totalLoans',
+
+            'totalBusinesses',
+
+            'businesses',
+
+            'transactions',
+
+            'from',
+
+            'to',
+
+            'businessId'
+
+        ));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | MONTHLY PDF REPORT
+    |--------------------------------------------------------------------------
+    */
+    public function monthly(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | FILTERS
+        |--------------------------------------------------------------------------
+        */
+
+        $from = $request->from
+            ?? now()->startOfMonth()->toDateString();
+
+        $to = $request->to
+            ?? now()->toDateString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | TRANSACTIONS
+        |--------------------------------------------------------------------------
+        */
+
+        $transactions = Transaction::with('business')
+            ->whereBetween(
+                'transaction_date',
+                [$from, $to]
+            )
+            ->latest()
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOTALS
+        |--------------------------------------------------------------------------
+        */
+
+        $totalIncome = Transaction::where('type', 'income')
+            ->whereBetween(
+                'transaction_date',
+                [$from, $to]
+            )
+            ->sum('amount');
+
+        $totalExpenses = Transaction::where('type', 'expense')
+            ->whereBetween(
+                'transaction_date',
+                [$from, $to]
+            )
+            ->sum('amount');
+
+        $netProfit = $totalIncome - $totalExpenses;
+
+        /*
+        |--------------------------------------------------------------------------
+        | PDF DATA
+        |--------------------------------------------------------------------------
+        */
+
+        $data = [
+
+            'transactions' => $transactions,
+
+            'totalIncome' => $totalIncome,
+
+            'totalExpenses' => $totalExpenses,
+
+            'netProfit' => $netProfit,
+
+            'from' => $from,
+
+            'to' => $to
+
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | GENERATE PDF
+        |--------------------------------------------------------------------------
+        */
+
+        $pdf = Pdf::loadView(
+            'reports.pdf',
+            $data
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | DOWNLOAD PDF
+        |--------------------------------------------------------------------------
+        */
+
+        return $pdf->download(
+            'financial-report.pdf'
+        );
     }
 }

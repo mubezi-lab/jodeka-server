@@ -29,4 +29,9 @@ class Business extends Model
     {
         return $this->hasMany(Stock::class);  
     }      
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
 }

@@ -7,33 +7,33 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class ExpenseController extends Controller
+class IncomeController extends Controller
 {
     /**
-     * Display all expenses
+     * Display all incomes
      */
     public function index()
     {
-        $expenses = Transaction::with('business', 'creator')
-            ->where('type', 'expense')
+        $incomes = Transaction::with('business', 'creator')
+            ->where('type', 'income')
             ->latest()
             ->get();
 
-        return view('company-expenses.index', compact('expenses'));
+        return view('company-income.index', compact('incomes'));
     }
 
     /**
-     * Show expense form
+     * Show create form
      */
     public function create()
     {
         $businesses = Business::orderBy('name')->get();
 
-        return view('company-expenses.create', compact('businesses'));
+        return view('company-income.create', compact('businesses'));
     }
 
     /**
-     * Store expense
+     * Store income
      */
     public function store(Request $request)
     {
@@ -57,7 +57,7 @@ class ExpenseController extends Controller
 
             'business_id' => $request->business_id,
 
-            'type' => 'expense',
+            'type' => 'income',
 
             'category' => $request->category,
 
@@ -67,7 +67,7 @@ class ExpenseController extends Controller
 
             'transaction_date' => $request->transaction_date,
 
-            'reference' => 'EXP-' . time(),
+            'reference' => 'INC-' . time(),
 
             'description' => $request->description,
 
@@ -76,41 +76,41 @@ class ExpenseController extends Controller
         ]);
 
         return redirect()
-            ->route('company-expenses.index')
-            ->with('success', 'Expense added successfully');
+            ->route('company-incomes.index')
+            ->with('success', 'Income added successfully');
     }
 
     /**
-     * Show single expense
+     * Show single income
      */
     public function show(string $id)
     {
-        $expense = Transaction::with('business', 'creator')
-            ->where('type', 'expense')
+        $income = Transaction::with('business', 'creator')
+            ->where('type', 'income')
             ->findOrFail($id);
 
-        return view('company-expenses.show', compact('expense'));
+        return view('company-income.show', compact('income'));
     }
 
     /**
-     * Edit expense form
+     * Edit form
      */
     public function edit(string $id)
     {
-        $expense = Transaction::where('type', 'expense')
+        $income = Transaction::where('type', 'income')
             ->findOrFail($id);
 
         $businesses = Business::orderBy('name')->get();
 
-        return view('company-expenses.edit', compact('expense', 'businesses'));
+        return view('company-income.edit', compact('income', 'businesses'));
     }
 
     /**
-     * Update expense
+     * Update income
      */
     public function update(Request $request, string $id)
     {
-        $expense = Transaction::where('type', 'expense')
+        $income = Transaction::where('type', 'income')
             ->findOrFail($id);
 
         $request->validate([
@@ -129,7 +129,7 @@ class ExpenseController extends Controller
 
         ]);
 
-        $expense->update([
+        $income->update([
 
             'business_id' => $request->business_id,
 
@@ -146,22 +146,22 @@ class ExpenseController extends Controller
         ]);
 
         return redirect()
-            ->route('company-expenses.index')
-            ->with('success', 'Expense updated successfully');
+            ->route('company-incomes.index')
+            ->with('success', 'Income updated successfully');
     }
 
     /**
-     * Delete expense
+     * Delete income
      */
     public function destroy(string $id)
     {
-        $expense = Transaction::where('type', 'expense')
+        $income = Transaction::where('type', 'income')
             ->findOrFail($id);
 
-        $expense->delete();
+        $income->delete();
 
         return redirect()
-            ->route('company-expenses.index')
-            ->with('success', 'Expense deleted successfully');
+            ->route('company-incomes.index')
+            ->with('success', 'Income deleted successfully');
     }
 }

@@ -2,38 +2,48 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
 
-    <!-- MOBILE RESPONSIVE -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Admin</title>
+    <title>Admin Dashboard</title>
 
     @vite('resources/css/app.css')
+
 </head>
 
 <body class="bg-gray-100 overflow-x-hidden">
 
     <div class="flex min-h-screen">
 
-        <!-- OVERLAY -->
-        <div id="sidebarOverlay" class="fixed inset-0 bg-black/70 z-40 hidden lg:hidden" onclick="toggleSidebar()">
+        {{-- ========================================= --}}
+        {{-- MOBILE OVERLAY --}}
+        {{-- ========================================= --}}
+        <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()">
         </div>
 
-        <!-- SIDEBAR -->
-        <aside id="sidebar" class="fixed lg:static z-50 inset-y-0 left-0
-                   w-full lg:w-64
-                   bg-gray-900 text-gray-200
-                   transform -translate-x-full lg:translate-x-0
-                   transition-transform duration-300">
+        {{-- ========================================= --}}
+        {{-- SIDEBAR --}}
+        {{-- ========================================= --}}
+        <aside id="sidebar" class="fixed lg:static inset-y-0 left-0
+                      z-50 w-72 bg-gray-900 text-white
+                      transform -translate-x-full lg:translate-x-0
+                      transition-transform duration-300
+                      overflow-y-auto">
 
-            <!-- LOGO -->
-            <div class="p-4 text-lg font-bold border-b border-gray-800 flex justify-between items-center">
+            {{-- LOGO --}}
+            <div class="flex items-center justify-between
+                        p-5 border-b border-gray-800">
 
-                JODEKA
+                <h1 class="text-2xl font-bold">
 
-                <!-- CLOSE BUTTON MOBILE -->
-                <button onclick="toggleSidebar()" class="lg:hidden text-white text-2xl">
+                    JODEKA
+
+                </h1>
+
+                {{-- MOBILE CLOSE --}}
+                <button onclick="toggleSidebar()" class="lg:hidden text-2xl">
 
                     ✕
 
@@ -41,231 +51,456 @@
 
             </div>
 
-            <!-- NAVIGATION -->
-            <nav class="p-4 space-y-2 text-sm">
+            {{-- ========================================= --}}
+            {{-- NAVIGATION --}}
+            {{-- ========================================= --}}
+            <nav class="p-4 space-y-3">
 
+                {{-- ========================================= --}}
                 {{-- DASHBOARD --}}
+                {{-- ========================================= --}}
+                <a href="{{ route('dashboard') }}" class="flex items-center gap-3
+                          px-4 py-3 rounded-lg transition
 
-                <a href="{{ route('dashboard') }}" class="block px-4 py-3 rounded transition
-                    {{ request()->routeIs('dashboard') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+                          {{ request()->routeIs('dashboard')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
-                    Dashboard
+                    <span>🏠</span>
 
-                </a>
-
-                {{-- BUSINESSES --}}
-
-                <a href="{{ route('businesses.index') }}" class="block px-4 py-3 rounded transition
-                    {{ request()->routeIs('businesses.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
-
-                    Businesses
+                    <span>Dashboard</span>
 
                 </a>
 
-                {{-- PRODUCTS --}}
+                {{-- ========================================= --}}
+                {{-- BUSINESS MANAGEMENT --}}
+                {{-- ========================================= --}}
+                <div>
 
-                <a href="{{ route('products.index') }}" class="block px-4 py-3 rounded transition
-                    {{ request()->routeIs('products.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+                    <button onclick="toggleMenu('businessMenu', 'businessArrow')" class="w-full flex items-center justify-between
+                                   px-4 py-3 rounded-lg
+                                   bg-gray-800 hover:bg-gray-700 transition">
 
-                    Products
+                        <span>
 
-                </a>
+                            🏢 Business Management
 
-                {{-- STOCK --}}
+                        </span>
 
-                <a href="{{ route('stocks.index') }}" class="block px-4 py-3 rounded transition
-                    {{ request()->routeIs('stocks.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+                        <span id="businessArrow" class="transition-transform duration-300">
 
-                    Stock
+                            ▶
 
-                </a>
+                        </span>
 
-                {{-- PURCHASES --}}
+                    </button>
 
-                <a href="{{ route('purchases.index') }}" class="block px-4 py-3 rounded transition
-                    {{ request()->routeIs('purchases.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+                    {{-- HIDDEN BY DEFAULT --}}
+                    <div id="businessMenu" class="hidden mt-2 space-y-2 pl-3">
 
-                    Purchases
+                        {{-- BUSINESSES --}}
+                        <a href="{{ route('businesses.index') }}" class="block px-4 py-2 rounded-lg transition
 
-                </a>
+                           {{ request()->routeIs('businesses.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
-                {{-- LIVESTOCK --}}
+                            Businesses
 
-                <a href="{{ route('livestocks.index') }}" class="block px-4 py-3 rounded transition
-                    {{ request()->routeIs('livestocks.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+                        </a>
 
-                    Livestock
+                        {{-- USERS --}}
+                        <a href="{{ route('users.index') }}" class="block px-4 py-2 rounded-lg transition
 
-                </a>
+                           {{ request()->routeIs('users.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
+                            Users
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+                {{-- ========================================= --}}
+                {{-- INVENTORY --}}
+                {{-- ========================================= --}}
+                <div>
+
+                    <button onclick="toggleMenu('inventoryMenu', 'inventoryArrow')" class="w-full flex items-center justify-between
+                                   px-4 py-3 rounded-lg
+                                   bg-gray-800 hover:bg-gray-700 transition">
+
+                        <span>
+
+                            📦 Inventory
+
+                        </span>
+
+                        <span id="inventoryArrow" class="transition-transform duration-300">
+
+                            ▶
+
+                        </span>
+
+                    </button>
+
+                    <div id="inventoryMenu" class="hidden mt-2 space-y-2 pl-3">
+
+                        {{-- PRODUCTS --}}
+                        <a href="{{ route('products.index') }}" class="block px-4 py-2 rounded-lg transition
+
+                           {{ request()->routeIs('products.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Products
+
+                        </a>
+
+                        {{-- STOCK --}}
+                        <a href="{{ route('stocks.index') }}" class="block px-4 py-2 rounded-lg transition
+
+                           {{ request()->routeIs('stocks.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Stock
+
+                        </a>
+
+                        {{-- PURCHASES --}}
+                        <a href="{{ route('purchases.index') }}" class="block px-4 py-2 rounded-lg transition
+
+                           {{ request()->routeIs('purchases.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Purchases
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+                {{-- ========================================= --}}
+                {{-- FARM --}}
+                {{-- ========================================= --}}
+                <div>
+
+                    <button onclick="toggleMenu('farmMenu', 'farmArrow')" class="w-full flex items-center justify-between
+                                   px-4 py-3 rounded-lg
+                                   bg-gray-800 hover:bg-gray-700 transition">
+
+                        <span>
+
+                            🐔 Farm
+
+                        </span>
+
+                        <span id="farmArrow" class="transition-transform duration-300">
+
+                            ▶
+
+                        </span>
+
+                    </button>
+
+                    <div id="farmMenu" class="hidden mt-2 space-y-2 pl-3">
+
+                        {{-- LIVESTOCK --}}
+                        <a href="{{ route('livestocks.index') }}" class="block px-4 py-2 rounded-lg transition
+
+                           {{ request()->routeIs('livestocks.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Livestock
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+                {{-- ========================================= --}}
                 {{-- TOILETS --}}
+                {{-- ========================================= --}}
+                <div>
 
-                <a href="{{ route('toilets.index') }}" class="block px-4 py-3 rounded transition
-                    {{ request()->routeIs('toilets.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+                    <button onclick="toggleMenu('toiletMenu', 'toiletArrow')" class="w-full flex items-center justify-between
+                                   px-4 py-3 rounded-lg
+                                   bg-gray-800 hover:bg-gray-700 transition">
 
-                    Toilets
+                        <span>
 
-                </a>
+                            🚻 Toilets
 
-                {{-- USERS --}}
+                        </span>
 
-                <a href="{{ route('users.index') }}" class="block px-4 py-3 rounded transition
-                    {{ request()->routeIs('users.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+                        <span id="toiletArrow" class="transition-transform duration-300">
 
-                    Users
+                            ▶
 
-                </a>
+                        </span>
+
+                    </button>
+
+                    <div id="toiletMenu" class="hidden mt-2 space-y-2 pl-3">
+
+                        <a href="{{ route('toilets.index') }}" class="block px-4 py-2 rounded-lg transition
+
+                           {{ request()->routeIs('toilets.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Toilets
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+                {{-- ========================================= --}}
+                {{-- FINANCE --}}
+                {{-- ========================================= --}}
+                <div>
+
+                    <button onclick="toggleMenu('financeMenu', 'financeArrow')" class="w-full flex items-center justify-between
+                                   px-4 py-3 rounded-lg
+                                   bg-gray-800 hover:bg-gray-700 transition">
+
+                        <span>
+
+                            💰 Finance
+
+                        </span>
+
+                        <span id="financeArrow" class="transition-transform duration-300">
+
+                            ▶
+
+                        </span>
+
+                    </button>
+
+                    <div id="financeMenu" class="hidden mt-2 space-y-2 pl-3">
+
+                        {{-- COMPANY EXPENSES --}}
+                        <a href="{{ route('company-expenses.index') }}" class="block px-4 py-2 rounded-lg transition
+
+                           {{ request()->routeIs('company-expenses.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Company Expenses
+
+                        </a>
+
+                        {{-- COMPANY INCOMES --}}
+                        <a href="{{ route('company-incomes.index') }}" class="block px-4 py-2 rounded-lg transition
+
+                           {{ request()->routeIs('company-incomes.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Company Incomes
+
+                        </a>
+
+                        {{-- SAVINGS --}}
+                        <a href="{{ route('savings.index') }}" class="block px-4 py-2 rounded-lg transition
+
+                           {{ request()->routeIs('savings.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Savings
+
+                        </a>
+
+                        {{-- LOANS --}}
+                        <a href="{{ route('loans.index') }}" class="block px-4 py-2 rounded-lg transition
+
+                           {{ request()->routeIs('loans.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Loans
+
+                        </a>
+
+                        {{-- REPORTS --}}
+                        <a href="{{ route('reports.monthly') }}" class="block px-4 py-2 rounded-lg transition
+
+                           {{ request()->routeIs('reports.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Reports
+
+                        </a>
+
+                    </div>
+
+                </div>
 
             </nav>
 
         </aside>
 
-        <!-- MAIN -->
-        <div class="flex-1 flex flex-col w-full">
+        {{-- ========================================= --}}
+        {{-- MAIN CONTENT --}}
+        {{-- ========================================= --}}
+        <div class="flex-1 flex flex-col">
 
-            <!-- TOPBAR -->
-            <div class="bg-white border-b border-gray-200
-                        px-4 lg:px-6 py-4
-                        flex justify-between items-center">
+            {{-- TOPBAR --}}
+            <header class="bg-white shadow-sm px-4 lg:px-6 py-4">
 
-                <!-- LEFT -->
-                <div class="flex items-center gap-3">
+                <div class="flex items-center justify-between">
 
-                    <!-- HAMBURGER -->
-                    <button onclick="toggleSidebar()" class="lg:hidden text-2xl text-gray-700">
+                    {{-- LEFT --}}
+                    <div class="flex items-center gap-4">
 
-                        ☰
+                        {{-- MOBILE MENU --}}
+                        <button onclick="toggleSidebar()" class="lg:hidden text-2xl text-gray-700">
 
-                    </button>
-
-                    <!-- TITLE -->
-                    <h1 class="text-base lg:text-lg font-semibold text-gray-800">
-                        @yield('title')
-                    </h1>
-
-                </div>
-
-                <!-- RIGHT -->
-                <div class="flex items-center gap-4">
-
-                    <!-- NOTIFICATIONS -->
-                    <div class="relative">
-
-                        <button onclick="toggleNotif()" class="relative text-lg">
-
-                            🔔
-
-                            <span class="absolute -top-1 -right-2
-                                         bg-red-500 text-white text-xs
-                                         px-1 rounded-full">
-
-                                3
-
-                            </span>
+                            ☰
 
                         </button>
 
-                        <!-- NOTIFICATION BOX -->
-                        <div id="notifBox" class="hidden absolute right-0 mt-2 w-64
-                                   bg-white border rounded shadow z-50">
+                        <h2 class="text-lg lg:text-2xl
+                                   font-bold text-gray-800">
 
-                            <div class="p-3 text-sm font-semibold border-b">
-                                Notifications
+                            @yield('title')
+
+                        </h2>
+
+                    </div>
+
+                    {{-- RIGHT --}}
+                    <div class="flex items-center gap-4">
+
+                        {{-- NOTIFICATIONS --}}
+                        <div class="relative">
+
+                            <button onclick="toggleNotif()" class="relative text-2xl">
+
+                                🔔
+
+                                <span class="absolute -top-1 -right-1
+                                             bg-red-500 text-white
+                                             text-xs rounded-full
+                                             px-1">
+
+                                    3
+
+                                </span>
+
+                            </button>
+
+                            {{-- NOTIFICATION DROPDOWN --}}
+                            <div id="notifBox" class="hidden absolute right-0 mt-2
+                                        w-64 bg-white border rounded-xl
+                                        shadow-lg z-50">
+
+                                <div class="p-4 border-b font-semibold">
+
+                                    Notifications
+
+                                </div>
+
+                                <div class="p-4 text-sm text-gray-500">
+
+                                    No notifications
+
+                                </div>
+
                             </div>
 
-                            <div class="p-3 text-sm text-gray-600">
-                                No new notifications
+                        </div>
+
+                        {{-- USER --}}
+                        <div class="relative">
+
+                            <button onclick="toggleUserMenu()" class="flex items-center gap-2
+                                           text-sm font-medium">
+
+                                <span>
+
+                                    {{ auth()->user()->name }}
+
+                                </span>
+
+                                <span>
+
+                                    ▼
+
+                                </span>
+
+                            </button>
+
+                            {{-- USER DROPDOWN --}}
+                            <div id="userMenu" class="hidden absolute right-0 mt-2
+                                        w-48 bg-white border rounded-xl
+                                        shadow-lg z-50">
+
+                                <a href="{{ route('profile.edit') }}" class="block px-4 py-3
+                                          hover:bg-gray-100">
+
+                                    Profile
+
+                                </a>
+
+                                <form method="POST" action="{{ route('logout') }}">
+
+                                    @csrf
+
+                                    <button type="submit" class="w-full text-left
+                                                   px-4 py-3
+                                                   hover:bg-gray-100">
+
+                                        Logout
+
+                                    </button>
+
+                                </form>
+
                             </div>
 
                         </div>
 
                     </div>
 
-                    <!-- USER -->
-                    <div class="relative">
-
-                        <button onclick="toggleUserMenu()" class="flex items-center text-sm font-medium
-                                   text-gray-700 hover:text-gray-900">
-
-                            <!-- USERNAME -->
-                            <span class="hidden sm:block">
-                                {{ auth()->user()->name }}
-                            </span>
-
-                            <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7" />
-
-                            </svg>
-
-                        </button>
-
-                        <!-- DROPDOWN -->
-                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-40
-                                   bg-white border rounded shadow z-50">
-
-                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm
-                                       text-gray-700 hover:bg-gray-100">
-
-                                Profile
-
-                            </a>
-
-                            <form method="POST" action="{{ route('logout') }}">
-
-                                @csrf
-
-                                <button class="w-full text-left px-4 py-2 text-sm
-                                           text-gray-700 hover:bg-gray-100">
-
-                                    Logout
-
-                                </button>
-
-                            </form>
-
-                        </div>
-
-                    </div>
-
                 </div>
 
-            </div>
+            </header>
 
-            <!-- CONTENT -->
-            <div class="p-4 lg:p-6">
+            {{-- PAGE CONTENT --}}
+            <main class="flex-1 p-4 lg:p-6">
 
-                <!-- BUTTONS -->
-                <div class="flex justify-center lg:justify-start
-                            gap-3 overflow-x-auto pb-2 mb-6">
-
-                    @yield('buttons')
-
-                </div>
-
-                <!-- PAGE CONTENT -->
                 @yield('content')
 
-            </div>
+            </main>
 
         </div>
 
     </div>
 
-    <!-- JAVASCRIPT -->
+    {{-- ========================================= --}}
+    {{-- JAVASCRIPT --}}
+    {{-- ========================================= --}}
     <script>
 
-        function toggleNotif() {
-            document.getElementById('notifBox')
-                .classList.toggle('hidden');
-        }
-
-        function toggleUserMenu() {
-            document.getElementById('userMenu')
-                .classList.toggle('hidden');
-        }
-
+        /*
+        |--------------------------------------------------------------------------
+        | SIDEBAR
+        |--------------------------------------------------------------------------
+        */
         function toggleSidebar() {
 
             document.getElementById('sidebar')
@@ -273,6 +508,44 @@
 
             document.getElementById('sidebarOverlay')
                 .classList.toggle('hidden');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | USER MENU
+        |--------------------------------------------------------------------------
+        */
+        function toggleUserMenu() {
+
+            document.getElementById('userMenu')
+                .classList.toggle('hidden');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NOTIFICATIONS
+        |--------------------------------------------------------------------------
+        */
+        function toggleNotif() {
+
+            document.getElementById('notifBox')
+                .classList.toggle('hidden');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | DROPDOWN MENUS
+        |--------------------------------------------------------------------------
+        */
+        function toggleMenu(menuId, arrowId) {
+
+            const menu = document.getElementById(menuId);
+
+            const arrow = document.getElementById(arrowId);
+
+            menu.classList.toggle('hidden');
+
+            arrow.classList.toggle('rotate-90');
         }
 
     </script>
