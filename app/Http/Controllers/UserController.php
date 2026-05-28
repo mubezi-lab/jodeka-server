@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Toilet;
 
 class UserController extends Controller
 {
@@ -16,14 +17,30 @@ class UserController extends Controller
         return view('users.index', compact('users'));
     }
 
+    // public function create()
+    // {
+    //     $businesses = Business::all();
+    //     $roles = Role::all();
+
+    //     return view('users.create', compact('businesses', 'roles'));
+    // }
+
+   
+
+
     public function create()
     {
-        $businesses = Business::all();
         $roles = Role::all();
+        $businesses = Business::all();
+        $toilets = Toilet::all();
 
-        return view('users.create', compact('businesses', 'roles'));
+        return view('users.create', compact(
+            'roles',
+            'businesses',
+            'toilets'
+        ));
     }
-
+   
     public function store(Request $request)
     {
         $validated = $request->validate([
