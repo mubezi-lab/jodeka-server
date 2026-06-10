@@ -280,7 +280,9 @@ DAILY ENTRY TABLE
                             <button
                                 onclick="openDailyEditModal(
                                     {{ $entry->id }},
+                                    '{{ \Carbon\Carbon::parse($entry->entry_date)->format('Y-m-d') }}',
                                     {{ $entry->opening_balance ?? 0 }},
+                                    {{ $entry->pos_amount ?? 0 }},
                                     {{ $entry->closing_balance ?? 0 }}
                                 )"
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition">
@@ -431,59 +433,96 @@ DAILY ENTRY EDIT MODAL
 
         {{-- FORM --}}
 
-        <form id="dailyEditForm" method="POST">
+<form id="dailyEditForm" method="POST">
 
-            @csrf
-            @method('PUT')
+    @csrf
+    @method('PUT')
 
-            {{-- OPENING --}}
+    {{-- DATE --}}
 
-            <div class="mb-4">
+    <div class="mb-4">
 
-                <label class="block mb-2 font-semibold text-sm">
+        <label class="block mb-2 font-semibold text-sm">
 
-                    Opening Balance
+            Date
 
-                </label>
+        </label>
 
-                <input type="number"
-                    step="0.01"
-                    id="editOpeningBalance"
-                    name="opening_balance"
-                    class="w-full border-gray-300 rounded-2xl h-12 px-4 text-sm"
-                    required>
+        <input
+            type="date"
+            id="editEntryDate"
+            name="entry_date"
+            class="w-full border-gray-300 rounded-2xl h-12 px-4 text-sm"
+            required>
 
-            </div>
+    </div>
 
-            {{-- CLOSING --}}
+    {{-- OPENING --}}
 
-            <div class="mb-6">
+    <div class="mb-4">
 
-                <label class="block mb-2 font-semibold text-sm">
+        <label class="block mb-2 font-semibold text-sm">
 
-                    Closing Balance
+            Opening Balance
 
-                </label>
+        </label>
 
-                <input type="number"
-                    step="0.01"
-                    id="editClosingBalance"
-                    name="closing_balance"
-                    class="w-full border-gray-300 rounded-2xl h-12 px-4 text-sm"
-                    required>
+        <input
+            type="number"
+            step="0.01"
+            id="editOpeningBalance"
+            name="opening_balance"
+            class="w-full border-gray-300 rounded-2xl h-12 px-4 text-sm"
+            required>
 
-            </div>
+    </div>
 
-            {{-- SUBMIT --}}
+    <div class="mb-4">
 
-            <button type="submit"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 rounded-2xl font-semibold text-sm">
+    <label class="block mb-2 font-semibold text-sm">
+        POS Amount
+    </label>
 
-                Update Entry
+    <input
+        type="number"
+        step="0.01"
+        id="editPosAmount"
+        name="pos_amount"
+        class="w-full border-gray-300 rounded-2xl h-12 px-4 text-sm">
 
-            </button>
+</div>
 
-        </form>
+    {{-- CLOSING --}}
+
+    <div class="mb-6">
+
+        <label class="block mb-2 font-semibold text-sm">
+
+            Closing Balance
+
+        </label>
+
+        <input
+            type="number"
+            step="0.01"
+            id="editClosingBalance"
+            name="closing_balance"
+            class="w-full border-gray-300 rounded-2xl h-12 px-4 text-sm"
+            required>
+
+    </div>
+
+    {{-- SUBMIT --}}
+
+    <button
+        type="submit"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 rounded-2xl font-semibold text-sm">
+
+        Update Entry
+
+    </button>
+
+</form>
 
     </div>
 
@@ -744,96 +783,156 @@ DAILY ENTRY EDIT MODAL
     JAVASCRIPT
     ========================================== --}}
 
-    <script>
+<script>
 
-        function openEditModal(id, name, amount, note) {
+    function openEditModal(id, name, amount, note) {
 
-            const modal = document.getElementById('editModal');
+        const modal = document.getElementById('editModal');
 
-            if (!modal) return;
+        if (!modal) return;
 
-            modal.classList.remove('hidden');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
 
-            modal.classList.add('flex');
+        document.getElementById('editExpenseName').value = name;
+        document.getElementById('editAmount').value = amount;
+        document.getElementById('editNote').value = note ?? '';
 
-            document.getElementById('editExpenseName').value = name;
+        document.getElementById('editForm').action =
+            '/expense/update/' + id;
+    }
 
-            document.getElementById('editAmount').value = amount;
+    function closeEditModal() {
 
-            document.getElementById('editNote').value = note ?? '';
+        const modal = document.getElementById('editModal');
 
-            document.getElementById('editForm').action =
-                '/expense/update/' + id;
-        }
+        if (!modal) return;
 
-        function closeEditModal() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 
-            const modal = document.getElementById('editModal');
+    function openTodayReport() {
 
-            if (!modal) return;
+        const modal = document.getElementById('todayReportModal');
 
-            modal.classList.add('hidden');
+        if (!modal) return;
 
-            modal.classList.remove('flex');
-        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 
-        function openTodayReport() {
+    function closeTodayReport() {
 
-            const modal = document.getElementById('todayReportModal');
+        const modal = document.getElementById('todayReportModal');
 
-            modal.classList.remove('hidden');
+        if (!modal) return;
 
-            modal.classList.add('flex');
-        }
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 
-        function closeTodayReport() {
+    function openExpenseEditFromReport(
+        id,
+        name,
+        amount,
+        note
+    ) {
 
-            const modal = document.getElementById('todayReportModal');
+        closeTodayReport();
 
-            modal.classList.add('hidden');
+        setTimeout(() => {
 
-            modal.classList.remove('flex');
-        }
+            openEditModal(
+                id,
+                name,
+                amount,
+                note
+            );
 
-        function openExpenseEditFromReport(id, name, amount, note) {
+        }, 200);
+    }
 
-            // Funga receipt modal kwanza
-            closeTodayReport();
+    /*
+    |--------------------------------------------------------------------------
+    | DAILY ENTRY EDIT MODAL
+    |--------------------------------------------------------------------------
+    */
 
-            // Fungua edit modal baada ya muda mfupi
-            setTimeout(() => {
+function openDailyEditModal(
+    id,
+    date,
+    opening,
+    pos,
+    closing
+) {
 
-                openEditModal(id, name, amount, note);
+    const modal =
+        document.getElementById(
+            'dailyEditModal'
+        );
 
-            }, 200);
-        }
-
-        function openDailyEditModal(id, opening, closing) {
-
-    const modal = document.getElementById('dailyEditModal');
+    if (!modal) return;
 
     modal.classList.remove('hidden');
-
     modal.classList.add('flex');
 
-    document.getElementById('editOpeningBalance').value = opening;
+    const dateField =
+        document.getElementById(
+            'editEntryDate'
+        );
 
-    document.getElementById('editClosingBalance').value = closing;
+    if (dateField) {
+        dateField.value = date;
+    }
 
-    document.getElementById('dailyEditForm').action =
+    const openingField =
+        document.getElementById(
+            'editOpeningBalance'
+        );
+
+    if (openingField) {
+        openingField.value = opening;
+    }
+
+    const posField =
+        document.getElementById(
+            'editPosAmount'
+        );
+
+    if (posField) {
+        posField.value = pos;
+    }
+
+    const closingField =
+        document.getElementById(
+            'editClosingBalance'
+        );
+
+    if (closingField) {
+        closingField.value = closing;
+    }
+
+    document.getElementById(
+        'dailyEditForm'
+    ).action =
         '{{ url("/daily-entry/update") }}/' + id;
 }
 
-function closeDailyEditModal() {
+    function closeDailyEditModal() {
 
-    const modal = document.getElementById('dailyEditModal');
+        const modal =
+            document.getElementById(
+                'dailyEditModal'
+            );
 
-    modal.classList.add('hidden');
+        if (!modal) return;
 
-    modal.classList.remove('flex');
-}
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 
-    </script>
+</script>
 
     {{-- =========================================
     PAGE STYLES

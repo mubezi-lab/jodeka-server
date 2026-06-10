@@ -90,10 +90,8 @@ return new class extends Migration
             |--------------------------------------------------------------------------
             */
 
-            $table->foreignId('created_by')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+            $table->integer('created_by')
+                ->nullable();
 
             $table->timestamps();
         });

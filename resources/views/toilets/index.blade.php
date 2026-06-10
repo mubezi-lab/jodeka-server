@@ -44,7 +44,7 @@
 
             {{-- CONTENT --}}
 
-            <div class="grid grid-cols-1 md:grid-cols-3">
+            <div class="grid grid-cols-1 md:grid-cols-4">
 
                 {{-- REVENUE --}}
                 <div class="p-6 border-b md:border-b-0 md:border-r border-gray-100">
@@ -136,18 +136,55 @@
 
                 </div>
 
-                {{-- BALANCE --}}
-                <div class="p-6">
+                {{-- POS SUMMARY --}}
+                <div class="p-6 border-b md:border-b-0 md:border-r border-gray-100">
+
+                    <p class="text-sm text-gray-500 mb-3">
+                        POS Summary
+                    </p>
+
+                    <h3 class="text-3xl font-bold text-orange-600">
+                        TZS {{ number_format($sokoniPosAmount ?? 0) }}
+                    </h3>
+
+                    <div class="mt-4 space-y-2 text-sm">
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-500">
+                                POS Collections
+                            </span>
+
+                            <span class="font-semibold text-orange-600">
+                                TZS {{ number_format($sokoniPosAmount ?? 0) }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-500">
+                                Your 60%
+                            </span>
+
+                            <span class="font-semibold text-green-600">
+                                TZS {{ number_format($sokoniYourShare ?? 0) }}
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {{-- TOTAL PROFIT --}}
+                <div class="p-6 border-b md:border-b-0 md:border-r border-gray-100">
 
                     <p class="text-sm text-gray-500 mb-3">
 
-                        Net Balance
+                        Total Profit
 
                     </p>
 
-                    <h3 class="text-3xl font-bold text-blue-600">
+                    <h3 class="text-3xl font-bold text-purple-600">
 
-                        TZS {{ number_format($todayNet ?? 0) }}
+                        TZS {{ number_format($totalProfit ?? 0) }}
 
                     </h3>
 
@@ -159,7 +196,7 @@
                                 Sokoni
                             </span>
 
-                            <span class="font-semibold text-blue-600">
+                            <span class="font-semibold text-purple-600">
                                 TZS {{ number_format($sokoniNet ?? 0) }}
                             </span>
 

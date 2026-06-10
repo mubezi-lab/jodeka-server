@@ -206,6 +206,7 @@ class ToiletAttendantController extends Controller
     public function storeEntry(Request $request)
     {
         $toilet = $this->assignedToilet();
+
         $isStendi = $this->isStendi($toilet);
 
         $rules = [
@@ -213,22 +214,47 @@ class ToiletAttendantController extends Controller
             'closing_balance' => 'required|numeric|min:0',
         ];
 
+        /*
+        |--------------------------------------------------------------------------
+        | STENDI REQUIREMENTS
+        |--------------------------------------------------------------------------
+        */
+
         if ($isStendi) {
+
             $rules['opening_balance'] = 'required|numeric|min:0';
+
+        } else {
+
+            /*
+            |--------------------------------------------------------------------------
+            | SOKONI REQUIREMENTS
+            |--------------------------------------------------------------------------
+            */
+
+            $rules['pos_amount'] = 'required|numeric|min:0';
         }
 
         $validated = $request->validate($rules);
+
+        /*
+        |--------------------------------------------------------------------------
+        | CHECK EXISTING ENTRY
+        |--------------------------------------------------------------------------
+        */
 
         $existingEntry = $toilet->dailyEntries()
             ->whereDate('entry_date', $validated['entry_date'])
             ->first();
 
         if ($existingEntry) {
+
             return redirect()->route(
                 $this->expensesRouteName($toilet),
                 [
-                    'entry_date' => Carbon::parse($existingEntry->entry_date)
-                        ->toDateString(),
+                    'entry_date' => Carbon::parse(
+                        $existingEntry->entry_date
+                    )->toDateString(),
                 ]
             )->with(
                 'success',
@@ -236,43 +262,89 @@ class ToiletAttendantController extends Controller
             );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | BALANCES
+        |--------------------------------------------------------------------------
+        */
+
         $openingBalance = $isStendi
             ? $validated['opening_balance']
             : 0;
 
         $closingBalance = $validated['closing_balance'];
 
+        /*
+        |--------------------------------------------------------------------------
+        | POS AMOUNT
+        |--------------------------------------------------------------------------
+        */
+
+        $posAmount = $isStendi
+            ? 0
+            : ($validated['pos_amount'] ?? 0);
+
+        /*
+        |--------------------------------------------------------------------------
+        | REVENUE CALCULATION
+        |--------------------------------------------------------------------------
+        */
+
         $revenue = $this->calculateRevenue(
             $toilet,
             $openingBalance,
             $closingBalance,
-            0
+            $posAmount
         );
 
         if ($revenue < 0) {
+
             return redirect()->back()
                 ->withErrors([
-                    'closing_balance' => 'Closing balance cannot be less than opening balance.',
+                    'closing_balance' =>
+                        'Closing balance cannot be less than opening balance.',
                 ])
                 ->withInput();
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE ENTRY
+        |--------------------------------------------------------------------------
+        */
+
         $entry = ToiletDailyEntry::create([
             'toilet_id' => $toilet->id,
+
             'opening_balance' => $openingBalance,
+
             'closing_balance' => $closingBalance,
+
+            'pos_amount' => $posAmount,
+
             'total_expenses' => 0,
+
             'total_revenue' => $revenue,
+
             'note' => null,
+
             'entry_date' => $validated['entry_date'],
+
             'is_closed' => false,
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDIRECT TO EXPENSES PAGE
+        |--------------------------------------------------------------------------
+        */
 
         return redirect()->route(
             $this->expensesRouteName($toilet),
             [
-                'entry_date' => Carbon::parse($entry->entry_date)
-                    ->toDateString(),
+                'entry_date' => Carbon::parse(
+                    $entry->entry_date
+                )->toDateString(),
             ]
         )->with(
             'success',
@@ -629,5 +701,30 @@ class ToiletAttendantController extends Controller
                 $totalExpenses
             ),
         ]);
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | CALCULATE POS BREAKDOWN
+    |--------------------------------------------------------------------------
+    */
+
+    private function calculatePosBreakdown(float $totalCollection, float $posAmount): array
+    {
+        $outsidePos = max(
+            0,
+            $totalCollection - $posAmount
+        );
+
+        $councilShare = $posAmount * 0.40;
+
+        $yourShare = $posAmount * 0.60;
+
+        return [
+            'total_collection' => $totalCollection,
+            'pos_amount'       => $posAmount,
+            'outside_pos'      => $outsidePos,
+            'council_share'    => $councilShare,
+            'your_share'       => $yourShare,
+        ];
     }
 }

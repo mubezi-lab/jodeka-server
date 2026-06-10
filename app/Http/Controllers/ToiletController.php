@@ -190,9 +190,14 @@ $monthlyExpensesForToilet = function (string $name) use (
         |--------------------------------------------------------------------------
         */
 
-        $sokoniOutsidePos =
-            $sokoniCollections -
-            $sokoniPosAmount;
+        // $sokoniOutsidePos =
+        //     $sokoniCollections -
+        //     $sokoniPosAmount;
+
+            $sokoniOutsidePos = max(
+                0,
+                $sokoniCollections - $sokoniPosAmount
+            );
 
 
 
@@ -205,6 +210,9 @@ $monthlyExpensesForToilet = function (string $name) use (
         $sokoniGrossProfit =
             $sokoniOutsidePos +
             $sokoniYourShare;
+
+
+
 
 
 
@@ -259,6 +267,10 @@ $monthlyExpensesForToilet = function (string $name) use (
         $todayNet =
             $stendiNet +
             $sokoniNet;
+
+        $totalProfit =
+            $sokoniNet +
+            $stendiNet;
 
 
 
@@ -443,7 +455,10 @@ $monthlyExpensesForToilet = function (string $name) use (
 
                 'chartLabels',
                 'revenueChart',
-                'expensesChart'
+                'expensesChart',
+
+
+                'totalProfit'
             )
         );
     }

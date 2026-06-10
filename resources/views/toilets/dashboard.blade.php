@@ -80,97 +80,20 @@
 
             @if(strtolower($toilet->name) === 'sokoni')
 
-                <div class="grid grid-cols-2 xl:grid-cols-5 gap-3 md:gap-5 mb-6">
+                <div class="mb-4">
 
-                    {{-- MONTHLY COLLECTION --}}
+                    <label class="block text-sm font-medium mb-2">
+                        POS Amount
+                    </label>
 
-                    <div class="bg-white shadow-sm rounded-3xl p-4 md:p-5">
-
-                        <p class="text-xs md:text-sm text-gray-500">
-
-                            Monthly Collection
-
-                        </p>
-
-                        <h2 class="text-lg md:text-2xl font-bold text-green-600 mt-2">
-
-                            TZS {{ number_format($monthlyCollection) }}
-
-                        </h2>
-
-                    </div>
-
-                    {{-- MONTHLY EXPENSES --}}
-
-                    <div class="bg-white shadow-sm rounded-3xl p-4 md:p-5">
-
-                        <p class="text-xs md:text-sm text-gray-500">
-
-                            Monthly Expenses
-
-                        </p>
-
-                        <h2 class="text-lg md:text-2xl font-bold text-red-500 mt-2">
-
-                            TZS {{ number_format($monthlyExpenses) }}
-
-                        </h2>
-
-                    </div>
-
-                    {{-- ATTENDANT ALLOWANCE --}}
-
-                    <div class="bg-white shadow-sm rounded-3xl p-4 md:p-5">
-
-                        <p class="text-xs md:text-sm text-gray-500">
-
-                            Attendant Allowance
-
-                        </p>
-
-                        <h2 class="text-lg md:text-2xl font-bold text-blue-600 mt-2">
-
-                            TZS {{ number_format($attendantAllowance) }}
-
-                        </h2>
-
-                    </div>
-
-                    {{-- COUNCIL SHARE --}}
-
-                    <div class="bg-white shadow-sm rounded-3xl p-4 md:p-5">
-
-                        <p class="text-xs md:text-sm text-gray-500">
-
-                            Council 40%
-
-                        </p>
-
-                        <h2 class="text-lg md:text-2xl font-bold text-orange-500 mt-2">
-
-                            TZS {{ number_format($councilShare) }}
-
-                        </h2>
-
-                    </div>
-
-                    {{-- OFFICE PROFIT --}}
-
-                    <div class="bg-white shadow-sm rounded-3xl p-4 md:p-5">
-
-                        <p class="text-xs md:text-sm text-gray-500">
-
-                            Office Profit
-
-                        </p>
-
-                        <h2 class="text-lg md:text-2xl font-bold text-purple-600 mt-2">
-
-                            TZS {{ number_format($officeShare) }}
-
-                        </h2>
-
-                    </div>
+                    <input
+                        type="number"
+                        name="pos_amount"
+                        step="0.01"
+                        min="0"
+                        value="0"
+                        required
+                        class="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm">
 
                 </div>
 
@@ -505,6 +428,31 @@
 
                         <input type="number"
                             name="opening_balance"
+                            required
+                            class="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm">
+
+                    </div>
+
+                @endif
+
+                {{-- POS AMOUNT (SOKONI ONLY) --}}
+
+                @if(strtolower($toilet->name) === 'sokoni')
+
+                    <div class="mb-4">
+
+                        <label class="block text-sm font-medium mb-2">
+
+                            POS Amount
+
+                        </label>
+
+                        <input
+                            type="number"
+                            name="pos_amount"
+                            step="0.01"
+                            min="0"
+                            value="0"
                             required
                             class="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm">
 
