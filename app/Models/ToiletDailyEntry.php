@@ -34,8 +34,10 @@ class ToiletDailyEntry extends Model
         'total_expenses',
 
         'total_revenue',
-        
+
         'pos_amount',
+
+        'daily_pos_collection',
 
         'note',
 

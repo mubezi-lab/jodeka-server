@@ -156,9 +156,9 @@ $monthlyExpensesForToilet = function (string $name) use (
         |--------------------------------------------------------------------------
         */
 
-        $sokoniPosAmount =
-            $monthlyEntryForToilet('sokoni')
-                ->sum('pos_amount');
+$sokoniPosAmount =
+    $monthlyEntryForToilet('sokoni')
+        ->sum('daily_pos_collection');
 
 
 
@@ -461,5 +461,42 @@ $monthlyExpensesForToilet = function (string $name) use (
                 'totalProfit'
             )
         );
+    }
+
+        private function calculatePosCollections($entries): float
+    {
+        $total = 0;
+
+        $previous = 0;
+
+        foreach ($entries as $entry) {
+
+            $current = (float) ($entry->pos_amount ?? 0);
+
+            /*
+            |--------------------------------------------------------------------------
+            | NORMAL INCREASE
+            |--------------------------------------------------------------------------
+            */
+
+            if ($current >= $previous) {
+
+                $total += ($current - $previous);
+
+            } else {
+
+                /*
+                |--------------------------------------------------------------------------
+                | POS RESET DETECTED
+                |--------------------------------------------------------------------------
+                */
+
+                $total += $current;
+            }
+
+            $previous = $current;
+        }
+
+        return $total;
     }
 }

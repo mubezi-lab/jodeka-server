@@ -90,45 +90,102 @@ class ToiletDailyEntryController extends Controller
     }
 
     public function update(Request $request, $id)
-{
-    $entry = ToiletDailyEntry::findOrFail($id);
+    {
+        $entry = ToiletDailyEntry::with('toilet', 'expenses')
+            ->findOrFail($id);
 
-    $request->validate([
-        'entry_date' => 'required|date',
-        'opening_balance' => 'required|numeric',
-        'pos_amount' => 'nullable|numeric|min:0',
-        'closing_balance' => 'required|numeric',
-    ]);
+        $request->validate([
+            'entry_date' => 'required|date',
+            'opening_balance' => 'required|numeric',
+            'pos_amount' => 'nullable|numeric|min:0',
+            'closing_balance' => 'required|numeric',
+        ]);
 
-    $oldDate = $entry->entry_date;
+        $oldDate = $entry->entry_date;
 
-    $entry->update([
-        'entry_date' => $request->entry_date,
-        'opening_balance' => $request->opening_balance,
-        'pos_amount' => $request->pos_amount ?? 0,
-        'closing_balance' => $request->closing_balance,
-    ]);
+        $isStendi = strtolower($entry->toilet->name) === 'stendi';
 
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE EXPENSE DATES TOO
-    |--------------------------------------------------------------------------
-    */
+        $posAmount = $isStendi
+            ? 0
+            : ($request->pos_amount ?? 0);
 
-    if ($oldDate != $request->entry_date) {
+        $totalExpenses = $entry->expenses()->sum('amount');
 
-        foreach ($entry->expenses as $expense) {
+        $totalRevenue = $isStendi
+            ? (($request->closing_balance + $totalExpenses) - $request->opening_balance)
+            : ($request->closing_balance + $totalExpenses);
 
-            $expense->created_at = $request->entry_date;
-            $expense->updated_at = now();
-
-            $expense->save();
+        if ($totalRevenue < 0) {
+            return back()
+                ->withErrors([
+                    'closing_balance' => 'Closing balance plus expenses cannot be less than opening balance.',
+                ])
+                ->withInput();
         }
-    }
 
-    return back()->with(
-        'success',
-        'Daily entry updated successfully.'
-    );
-}
+        $entry->update([
+            'entry_date' => $request->entry_date,
+            'opening_balance' => $request->opening_balance,
+            'closing_balance' => $request->closing_balance,
+            'pos_amount' => $posAmount,
+            'total_expenses' => $totalExpenses,
+            'total_revenue' => $totalRevenue,
+        ]);
+
+        if ($oldDate != $request->entry_date) {
+            foreach ($entry->expenses as $expense) {
+                $expense->created_at = $request->entry_date;
+                $expense->updated_at = now();
+                $expense->save();
+            }
+        }
+
+        if (!$isStendi) {
+            $previousEntry = ToiletDailyEntry::where('toilet_id', $entry->toilet_id)
+                ->whereDate('entry_date', '<', $request->entry_date)
+                ->orderBy('entry_date', 'desc')
+                ->first();
+
+            $previousPosAmount = $previousEntry
+                ? ($previousEntry->pos_amount ?? 0)
+                : null;
+
+            $entriesToRecalculate = ToiletDailyEntry::where('toilet_id', $entry->toilet_id)
+                ->whereDate('entry_date', '>=', $request->entry_date)
+                ->orderBy('entry_date', 'asc')
+                ->get();
+
+            foreach ($entriesToRecalculate as $currentEntry) {
+                $currentPosAmount = $currentEntry->pos_amount ?? 0;
+
+                if ($previousPosAmount === null) {
+                    $dailyPosCollection = $currentPosAmount;
+                } elseif ($currentPosAmount < $previousPosAmount) {
+                    $dailyPosCollection = $currentPosAmount;
+                } else {
+                    $dailyPosCollection = $currentPosAmount - $previousPosAmount;
+                }
+
+                $currentEntry->update([
+                    'daily_pos_collection' => $dailyPosCollection,
+                ]);
+
+                $previousPosAmount = $currentPosAmount;
+            }
+        }
+
+    $routeName = strtolower($entry->toilet->name) === 'stendi'
+        ? 'stendi.expenses'
+        : 'sokoni.expenses';
+
+    return redirect()
+        ->route($routeName, [
+            'entry_date' => \Carbon\Carbon::parse($request->entry_date)
+                ->toDateString(),
+        ])
+        ->with(
+            'success',
+            'Daily entry updated successfully.'
+        );
+    }
 }

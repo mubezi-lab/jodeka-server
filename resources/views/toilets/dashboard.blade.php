@@ -219,6 +219,12 @@
                                     Revenue
 
                                 </th>
+                                <th
+                                    class="px-4 py-3 text-left text-sm whitespace-nowrap">
+
+                                    POS Today
+
+                                </th>
 
                                 <th
                                     class="hidden md:table-cell px-4 py-3 text-left text-sm whitespace-nowrap">
@@ -241,7 +247,7 @@
 
                         <tbody>
 
-                            @forelse($entries->take(7) as $entry)
+                            @forelse($entries->take(17) as $entry)
 
                                 <tr class="border-t hover:bg-gray-50">
 
@@ -282,6 +288,13 @@
                                     <td class="px-4 py-4 text-green-600 font-bold text-sm whitespace-nowrap">
 
                                         TZS {{ number_format($entry->total_revenue) }}
+
+                                    </td>
+                                    {{-- POS TODAY --}}
+
+                                    <td class="px-4 py-4 text-green-600 font-semibold text-sm whitespace-nowrap">
+
+                                        TZS {{ number_format($entry->daily_pos_collection) }}
 
                                     </td>
 
@@ -443,7 +456,7 @@
 
                         <label class="block text-sm font-medium mb-2">
 
-                            POS Amount
+                            POS Reading (Optional)
 
                         </label>
 
@@ -452,9 +465,14 @@
                             name="pos_amount"
                             step="0.01"
                             min="0"
-                            value="0"
-                            required
+                            placeholder="Leave empty if POS was not used"
                             class="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm">
+
+                        <p class="text-xs text-gray-500 mt-1">
+
+                            Enter the current reading displayed on the POS dashboard. Leave empty if the POS was not used today.
+
+                        </p>
 
                     </div>
 
