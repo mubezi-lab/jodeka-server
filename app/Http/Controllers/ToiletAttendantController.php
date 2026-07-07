@@ -34,8 +34,13 @@ class ToiletAttendantController extends Controller
         //     ->get();
 
         $entries = $toilet->dailyEntries()
-        ->latest('entry_date')
-        ->get();
+            ->whereBetween('entry_date', [
+                now()->startOfMonth()->toDateString(),
+                now()->endOfMonth()->toDateString(),
+            ])
+            ->latest('entry_date')
+            ->take(7)
+            ->get();
 
         /*
         |--------------------------------------------------------------------------

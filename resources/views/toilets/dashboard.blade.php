@@ -247,7 +247,7 @@
 
                         <tbody>
 
-                            @forelse($entries->take(17) as $entry)
+                            @forelse($entries as $entry)
 
                                 <tr class="border-t hover:bg-gray-50">
 
