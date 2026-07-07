@@ -290,7 +290,7 @@ public function storeEntry(Request $request)
     */
 
     $posAmount = $isStendi
-        ? null
+        ? 0
         : ($validated['pos_amount'] ?? 0);
 
     /*
