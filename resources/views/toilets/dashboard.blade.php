@@ -181,7 +181,7 @@
 
                 <div class="overflow-x-auto">
 
-                    <table class="w-full min-w-[720px]">
+                    <table class="w-full min-w-[880px]">
 
                         {{-- TABLE HEAD --}}
 
@@ -190,53 +190,41 @@
                             <tr>
 
                                 <th class="px-4 py-3 text-left text-sm whitespace-nowrap">
-
                                     Date
-
                                 </th>
 
                                 <th
                                     class="hidden md:table-cell px-4 py-3 text-left text-sm whitespace-nowrap">
-
                                     Opening
-
                                 </th>
 
                                 <th class="px-4 py-3 text-left text-sm whitespace-nowrap">
-
                                     Closing
-
                                 </th>
 
                                 <th class="px-4 py-3 text-left text-sm whitespace-nowrap">
-
                                     Expenses
-
                                 </th>
 
                                 <th class="px-4 py-3 text-left text-sm whitespace-nowrap">
-
                                     Revenue
-
                                 </th>
-                                <th
-                                    class="px-4 py-3 text-left text-sm whitespace-nowrap">
 
+                                <th class="px-4 py-3 text-left text-sm whitespace-nowrap">
                                     POS Today
+                                </th>
 
+                                <th class="px-4 py-3 text-left text-sm whitespace-nowrap">
+                                    HQ Collection
                                 </th>
 
                                 <th
                                     class="hidden md:table-cell px-4 py-3 text-left text-sm whitespace-nowrap">
-
                                     Status
-
                                 </th>
 
                                 <th class="px-4 py-3 text-center text-sm whitespace-nowrap">
-
                                     Actions
-
                                 </th>
 
                             </tr>
@@ -248,6 +236,13 @@
                         <tbody>
 
                             @forelse($entries as $entry)
+
+                                @php
+                                    $hqCollection = max(
+                                        0,
+                                        $entry->total_revenue - $entry->total_expenses
+                                    );
+                                @endphp
 
                                 <tr class="border-t hover:bg-gray-50">
 
@@ -290,11 +285,20 @@
                                         TZS {{ number_format($entry->total_revenue) }}
 
                                     </td>
+
                                     {{-- POS TODAY --}}
 
-                                    <td class="px-4 py-4 text-green-600 font-semibold text-sm whitespace-nowrap">
+                                    <td class="px-4 py-4 text-orange-600 font-semibold text-sm whitespace-nowrap">
 
                                         TZS {{ number_format($entry->daily_pos_collection) }}
+
+                                    </td>
+
+                                    {{-- HQ COLLECTION --}}
+
+                                    <td class="px-4 py-4 text-blue-600 font-bold text-sm whitespace-nowrap">
+
+                                        TZS {{ number_format($hqCollection) }}
 
                                     </td>
 
@@ -328,11 +332,12 @@
 
                                     <td class="px-4 py-4 text-center whitespace-nowrap">
 
-                                        <a href="{{ url(
-                                            strtolower($toilet->name) === 'stendi'
-                                            ? '/stendi/expenses?entry_date=' . $entry->entry_date
-                                            : '/sokoni/expenses?entry_date=' . $entry->entry_date
-                                        ) }}"
+                                        <a
+                                            href="{{ url(
+                                                strtolower($toilet->name) === 'stendi'
+                                                    ? '/stendi/expenses?entry_date=' . $entry->entry_date
+                                                    : '/sokoni/expenses?entry_date=' . $entry->entry_date
+                                            ) }}"
                                             class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs inline-block">
 
                                             Manage
@@ -349,7 +354,8 @@
 
                                 <tr>
 
-                                    <td colspan="7"
+                                    <td
+                                        colspan="9"
                                         class="px-4 py-6 text-center text-gray-500 text-sm">
 
                                         No entries found.

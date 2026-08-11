@@ -30,6 +30,15 @@ use App\Http\Controllers\ToiletController;
 use App\Http\Controllers\ToiletAttendantController;
 use App\Http\Controllers\ToiletDailyEntryController;
 
+use App\Http\Controllers\FixedExpenseController;
+use App\Http\Controllers\FixedExpensePaymentController;
+
+use App\Http\Controllers\NetworkRouterController;
+
+use App\Http\Controllers\HotspotProfileController;
+
+use App\Http\Controllers\DailyCashEntryController;
+
 /*
 |--------------------------------------------------------------------------
 | WEB ROUTES
@@ -204,20 +213,10 @@ Route::middleware([
         'index'
     ])->name('reports.index');
 
-    Route::get('/reports/daily', [
-        ReportController::class,
-        'daily'
-    ])->name('reports.daily');
-
     Route::get('/reports/monthly', [
         ReportController::class,
         'monthly'
     ])->name('reports.monthly');
-
-    Route::get('/reports/yearly', [
-        ReportController::class,
-        'yearly'
-    ])->name('reports.yearly');
 
 
     /*
@@ -244,6 +243,33 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
+    | FIXED EXPENSES
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'fixed-expenses',
+        FixedExpenseController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | FIXED EXPENSE PAYMENTS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/fixed-expense-payments', [
+        FixedExpensePaymentController::class,
+        'index'
+    ])->name('fixed-expense-payments.index');
+
+    Route::post('/fixed-expense-payments/{fixedExpense}/pay', [
+        FixedExpensePaymentController::class,
+        'pay'
+    ])->name('fixed-expense-payments.pay');
+
+    /*
+    |--------------------------------------------------------------------------
     | COMPANY INCOMES
     |--------------------------------------------------------------------------
     */
@@ -252,6 +278,35 @@ Route::middleware([
         'company-incomes',
         IncomeController::class
     );
+    /*
+    |--------------------------------------------------------------------------
+    | COMPANY NETWORK
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'network-routers', 
+        NetworkRouterController::class);
+
+    Route::post('/network-routers/{networkRouter}/test-connection',
+        [NetworkRouterController::class, 'testConnection']
+        )->name('network-routers.test');
+
+    Route::post('/network-routers/{networkRouter}/sync-profiles',
+        [NetworkRouterController::class, 'syncProfiles']
+        )->name('network-routers.sync-profiles');
+
+    Route::get('/hotspot-profiles',
+        [HotspotProfileController::class, 'index']
+        )->name('hotspot-profiles.index');
+
+    Route::get('/hotspot-profiles/{hotspotProfile}/edit',
+        [HotspotProfileController::class, 'edit']
+        )->name('hotspot-profiles.edit');
+
+    Route::put('/hotspot-profiles/{hotspotProfile}',
+        [HotspotProfileController::class, 'update']
+        )->name('hotspot-profiles.update');
 
     /*
     |--------------------------------------------------------------------------
@@ -552,7 +607,36 @@ Route::middleware([
         ToiletDailyEntryController::class,
         'update'
     ])->name('daily-entry.update');
+
 });
+
+  /*
+    |--------------------------------------------------------------------------
+    | DAILY CASH (ADMIN & MANAGER)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware([
+        'auth',
+        'role:admin,manager'
+    ])->group(function () {
+
+        Route::get('/daily-cash', [
+            DailyCashEntryController::class,
+            'index'
+        ])->name('daily-cash.index');
+
+        Route::get('/daily-cash/create', [
+            DailyCashEntryController::class,
+            'create'
+        ])->name('daily-cash.create');
+
+        Route::post('/daily-cash', [
+            DailyCashEntryController::class,
+            'store'
+        ])->name('daily-cash.store');
+
+    });
 
 /*
 |--------------------------------------------------------------------------

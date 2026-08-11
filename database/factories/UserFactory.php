@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -29,8 +30,30 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'role_id' => self::roleId('employee'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => self::roleId('admin'),
+        ]);
+    }
+
+    public function manager(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => self::roleId('manager'),
+        ]);
+    }
+
+    public function employee(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => self::roleId('employee'),
+        ]);
     }
 
     /**
@@ -41,5 +64,11 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    private static function roleId(string $name): int
+    {
+        return Role::query()->where('name', $name)->value('id')
+            ?? Role::query()->forceCreate(['name' => $name])->id;
     }
 }

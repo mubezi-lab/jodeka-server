@@ -34,4 +34,9 @@ class Business extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function fixedExpenses()
+    {
+        return $this->hasMany(FixedExpense::class);
+    }
 }
