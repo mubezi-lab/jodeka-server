@@ -34,8 +34,8 @@ use App\Http\Controllers\FixedExpenseController;
 use App\Http\Controllers\FixedExpensePaymentController;
 
 use App\Http\Controllers\NetworkRouterController;
-
 use App\Http\Controllers\HotspotProfileController;
+use App\Http\Controllers\HotspotVoucherController;
 
 use App\Http\Controllers\DailyCashEntryController;
 
@@ -201,7 +201,6 @@ Route::middleware([
         'getStockData'
     ])->name('stocks.data');
 
-
     /*
     |--------------------------------------------------------------------------
     | REPORTS
@@ -217,7 +216,6 @@ Route::middleware([
         ReportController::class,
         'monthly'
     ])->name('reports.monthly');
-
 
     /*
     |--------------------------------------------------------------------------
@@ -278,6 +276,7 @@ Route::middleware([
         'company-incomes',
         IncomeController::class
     );
+
     /*
     |--------------------------------------------------------------------------
     | COMPANY NETWORK
@@ -285,28 +284,81 @@ Route::middleware([
     */
 
     Route::resource(
-        'network-routers', 
-        NetworkRouterController::class);
+        'network-routers',
+        NetworkRouterController::class
+    );
 
-    Route::post('/network-routers/{networkRouter}/test-connection',
+    Route::post(
+        '/network-routers/{networkRouter}/test-connection',
         [NetworkRouterController::class, 'testConnection']
-        )->name('network-routers.test');
+    )->name('network-routers.test');
 
-    Route::post('/network-routers/{networkRouter}/sync-profiles',
+    Route::post(
+        '/network-routers/{networkRouter}/sync-profiles',
         [NetworkRouterController::class, 'syncProfiles']
-        )->name('network-routers.sync-profiles');
+    )->name('network-routers.sync-profiles');
 
-    Route::get('/hotspot-profiles',
+    /*
+    |--------------------------------------------------------------------------
+    | HOTSPOT PROFILES
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/hotspot-profiles',
         [HotspotProfileController::class, 'index']
-        )->name('hotspot-profiles.index');
+    )->name('hotspot-profiles.index');
 
-    Route::get('/hotspot-profiles/{hotspotProfile}/edit',
+    Route::get(
+        '/hotspot-profiles/{hotspotProfile}/edit',
         [HotspotProfileController::class, 'edit']
-        )->name('hotspot-profiles.edit');
+    )->name('hotspot-profiles.edit');
 
-    Route::put('/hotspot-profiles/{hotspotProfile}',
+    Route::put(
+        '/hotspot-profiles/{hotspotProfile}',
         [HotspotProfileController::class, 'update']
-        )->name('hotspot-profiles.update');
+    )->name('hotspot-profiles.update');
+
+    /*
+    |--------------------------------------------------------------------------
+    | HOTSPOT VOUCHERS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/hotspot-vouchers',
+        [HotspotVoucherController::class, 'index']
+    )->name('hotspot-vouchers.index');
+
+    Route::get(
+        '/hotspot-vouchers/create',
+        [HotspotVoucherController::class, 'create']
+    )->name('hotspot-vouchers.create');
+
+    Route::get(
+        '/hotspot-vouchers/{hotspotVoucher}',
+        [HotspotVoucherController::class, 'show']
+    )->name('hotspot-vouchers.show');
+
+    Route::get(
+        '/hotspot-vouchers-mikrotik',
+        [HotspotVoucherController::class, 'mikrotik']
+    )->name('hotspot-vouchers.mikrotik');
+
+    Route::post(
+        '/hotspot-vouchers',
+        [HotspotVoucherController::class, 'store']
+    )->name('hotspot-vouchers.store');
+
+    Route::post(
+        '/hotspot-vouchers/sync-status',
+        [HotspotVoucherController::class, 'syncStatus']
+    )->name('hotspot-vouchers.sync-status');
+
+    Route::post(
+        '/hotspot-vouchers/{hotspotVoucher}/cancel',
+        [HotspotVoucherController::class, 'cancel']
+    )->name('hotspot-vouchers.cancel');
 
     /*
     |--------------------------------------------------------------------------
@@ -610,33 +662,33 @@ Route::middleware([
 
 });
 
-  /*
-    |--------------------------------------------------------------------------
-    | DAILY CASH (ADMIN & MANAGER)
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| DAILY CASH (ADMIN & MANAGER)
+|--------------------------------------------------------------------------
+*/
 
-    Route::middleware([
-        'auth',
-        'role:admin,manager'
-    ])->group(function () {
+Route::middleware([
+    'auth',
+    'role:admin,manager'
+])->group(function () {
 
-        Route::get('/daily-cash', [
-            DailyCashEntryController::class,
-            'index'
-        ])->name('daily-cash.index');
+    Route::get('/daily-cash', [
+        DailyCashEntryController::class,
+        'index'
+    ])->name('daily-cash.index');
 
-        Route::get('/daily-cash/create', [
-            DailyCashEntryController::class,
-            'create'
-        ])->name('daily-cash.create');
+    Route::get('/daily-cash/create', [
+        DailyCashEntryController::class,
+        'create'
+    ])->name('daily-cash.create');
 
-        Route::post('/daily-cash', [
-            DailyCashEntryController::class,
-            'store'
-        ])->name('daily-cash.store');
+    Route::post('/daily-cash', [
+        DailyCashEntryController::class,
+        'store'
+    ])->name('daily-cash.store');
 
-    });
+});
 
 /*
 |--------------------------------------------------------------------------

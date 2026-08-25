@@ -9,8 +9,8 @@
 
     <title>Admin Dashboard</title>
 
-   {{-- @vite('resources/css/app.css')  --}}
-   @vite([
+    {{-- @vite('resources/css/app.css') --}}
+    @vite([
         'resources/css/app.css',
         'resources/js/app.js'
     ])
@@ -274,37 +274,53 @@
                 {{-- ========================================= --}}
                 <div>
 
-                    <button onclick="toggleMenu('hotspotMenu', 'hotspotArrow')"
-                        class="w-full flex items-center justify-between
+                    <button onclick="toggleMenu('hotspotMenu', 'hotspotArrow')" class="w-full flex items-center justify-between
                             px-4 py-3 rounded-lg
                             bg-gray-800 hover:bg-gray-700 transition">
 
                         <span>
-
                             📶 Hotspot
-
                         </span>
 
-                        <span id="hotspotArrow"
-                            class="transition-transform duration-300">
-
+                        <span id="hotspotArrow" class="transition-transform duration-300">
                             ▶
-
                         </span>
 
                     </button>
 
-                    <div id="hotspotMenu"
-                        class="hidden mt-2 space-y-2 pl-3">
+                    <div id="hotspotMenu" class="{{ request()->routeIs(
+    'network-routers.*',
+    'hotspot-profiles.*',
+    'hotspot-vouchers.*'
+) ? '' : 'hidden' }} mt-2 space-y-2 pl-3">
 
-                        <a href="{{ route('network-routers.index') }}"
-                            class="block px-4 py-2 rounded-lg transition
-
+                        {{-- ROUTERS --}}
+                        <a href="{{ route('network-routers.index') }}" class="block px-4 py-2 rounded-lg transition
                             {{ request()->routeIs('network-routers.*')
-                                ? 'bg-indigo-600 text-white'
-                                : 'hover:bg-gray-800' }}">
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
                             Routers
+
+                        </a>
+
+                        {{-- HOTSPOT PROFILES --}}
+                        <a href="{{ route('hotspot-profiles.index') }}" class="block px-4 py-2 rounded-lg transition
+                            {{ request()->routeIs('hotspot-profiles.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Profiles
+
+                        </a>
+
+                        {{-- HOTSPOT VOUCHERS --}}
+                        <a href="{{ route('hotspot-vouchers.index') }}" class="block px-4 py-2 rounded-lg transition
+                            {{ request()->routeIs('hotspot-vouchers.*')
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
+
+                            Vouchers
 
                         </a>
 
@@ -341,8 +357,8 @@
                         <a href="{{ route('company-expenses.index') }}" class="block px-4 py-2 rounded-lg transition
 
                            {{ request()->routeIs('company-expenses.*')
-                            ? 'bg-indigo-600 text-white'
-                            : 'hover:bg-gray-800' }}">
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
                             Company Expenses
 
@@ -351,8 +367,8 @@
                         <a href="{{ route('fixed-expenses.index') }}" class="block px-4 py-2 rounded-lg transition
 
                         {{ request()->routeIs('fixed-expenses.*')
-                            ? 'bg-indigo-600 text-white'
-                            : 'hover:bg-gray-800' }}">
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
                             Fixed Expenses
 
@@ -362,8 +378,8 @@
                         <a href="{{ route('fixed-expense-payments.index') }}" class="block px-4 py-2 rounded-lg transition
 
                         {{ request()->routeIs('fixed-expense-payments.*')
-                            ? 'bg-indigo-600 text-white'
-                            : 'hover:bg-gray-800' }}">
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
                             Fixed Expense Payments
 
@@ -373,8 +389,8 @@
                         <a href="{{ route('company-incomes.index') }}" class="block px-4 py-2 rounded-lg transition
 
                            {{ request()->routeIs('company-incomes.*')
-                            ? 'bg-indigo-600 text-white'
-                            : 'hover:bg-gray-800' }}">
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
                             Company Incomes
 
@@ -384,8 +400,8 @@
                         <a href="{{ route('savings.index') }}" class="block px-4 py-2 rounded-lg transition
 
                            {{ request()->routeIs('savings.*')
-                            ? 'bg-indigo-600 text-white'
-                            : 'hover:bg-gray-800' }}">
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
                             Savings
 
@@ -395,8 +411,8 @@
                         <a href="{{ route('loans.index') }}" class="block px-4 py-2 rounded-lg transition
 
                            {{ request()->routeIs('loans.*')
-                            ? 'bg-indigo-600 text-white'
-                            : 'hover:bg-gray-800' }}">
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
                             Loans
 
@@ -406,8 +422,8 @@
                         <a href="{{ route('reports.monthly') }}" class="block px-4 py-2 rounded-lg transition
 
                            {{ request()->routeIs('reports.*')
-                                ? 'bg-indigo-600 text-white'
-                                : 'hover:bg-gray-800' }}">
+    ? 'bg-indigo-600 text-white'
+    : 'hover:bg-gray-800' }}">
 
                             Reports
 
@@ -424,7 +440,7 @@
         {{-- ========================================= --}}
         {{-- MAIN CONTENT --}}
         {{-- ========================================= --}}
-        <div class="flex-1 flex flex-col">
+        <div class="flex-1 min-w-0 flex flex-col">
 
             {{-- TOPBAR --}}
             <header class="bg-white shadow-sm px-4 lg:px-6 py-4">
@@ -549,7 +565,7 @@
             </header>
 
             {{-- PAGE CONTENT --}}
-            <main class="flex-1 p-4 lg:p-6">
+            <main class="flex-1 min-w-0 p-4 lg:p-6">
 
                 @yield('content')
 
