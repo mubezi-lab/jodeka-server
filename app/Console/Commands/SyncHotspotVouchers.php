@@ -24,10 +24,54 @@ class SyncHotspotVouchers extends Command
         $updated = 0;
         $expired = 0;
         $deletedFromMikrotik = 0;
+        $finalUsageImported = 0;
 
         foreach ($routers as $router) {
             try {
                 $client = $this->routerClient($router);
+
+                /*
+                |--------------------------------------------------------------------------
+                | GET FINAL USAGE SNAPSHOTS
+                |--------------------------------------------------------------------------
+                |
+                | MikroTik on-logout stores final counters using:
+                |
+                | /system script
+                |
+                | name:
+                | JODEKA-USAGE-JDKxxxxx
+                |
+                | source:
+                | user=JDKxxxxx|uptime=300|bytes-in=...|bytes-out=...
+                |
+                | This remains available even after the hotspot user itself
+                | has been deleted from MikroTik.
+                |
+                */
+
+                $usageSnapshots = $client
+                    ->query(new Query('/system/script/print'))
+                    ->read();
+
+                $usageSnapshotsByUsername = collect($usageSnapshots)
+                    ->filter(function ($script) {
+                        return isset($script['name'])
+                            && str_starts_with(
+                                strtoupper($script['name']),
+                                'JODEKA-USAGE-JDK'
+                            );
+                    })
+                    ->mapWithKeys(function ($script) {
+                        $username = substr(
+                            $script['name'],
+                            strlen('JODEKA-USAGE-')
+                        );
+
+                        return [
+                            $username => $script,
+                        ];
+                    });
 
                 /*
                 |--------------------------------------------------------------------------
@@ -259,10 +303,6 @@ class SyncHotspotVouchers extends Command
                     |--------------------------------------------------------------------------
                     | USED STATUS FROM HISTORICAL MIKROTIK COUNTERS
                     |--------------------------------------------------------------------------
-                    |
-                    | Used does NOT mean currently online.
-                    | It means the voucher has been used at least once.
-                    |
                     */
 
                     if ($hasUsage && $voucher->status === 'unused') {
@@ -285,19 +325,8 @@ class SyncHotspotVouchers extends Command
                         | FIRST LOGIN
                         |--------------------------------------------------------------------------
                         |
-                        | IMPORTANT:
-                        |
-                        | Do not use the JODEKA sync time as first login.
-                        |
-                        | MikroTik tells us how long the current Hotspot
-                        | session has already been active.
-                        |
-                        | Example:
-                        |
-                        | JODEKA sync time = 05:35:26
-                        | MikroTik uptime   = 52s
-                        |
-                        | Real login time   = 05:34:34
+                        | We use MikroTik active-session uptime to determine
+                        | the real login time instead of using sync time.
                         |
                         */
 
@@ -319,7 +348,7 @@ class SyncHotspotVouchers extends Command
                             } else {
                                 /*
                                 | Fallback only if MikroTik has not yet
-                                | reported a usable active uptime.
+                                | reported a usable uptime.
                                 */
                                 $voucher->first_login_at = now();
                             }
@@ -425,6 +454,256 @@ class SyncHotspotVouchers extends Command
 
                 /*
                 |--------------------------------------------------------------------------
+                | IMPORT FINAL USAGE SNAPSHOTS
+                |--------------------------------------------------------------------------
+                |
+                | These snapshots survive after MikroTik removes the hotspot
+                | user. This means JODEKA can still receive the last session
+                | counters even if the next cron run happens after expiry.
+                |
+                */
+
+                foreach (
+                    $usageSnapshotsByUsername
+                    as $username => $snapshotScript
+                ) {
+                    try {
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | FIND JODEKA VOUCHER
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $voucher = HotspotVoucher::where(
+                            'network_router_id',
+                            $router->id
+                        )
+                            ->where(
+                                'username',
+                                $username
+                            )
+                            ->first();
+
+                        /*
+                        | Never delete an unknown snapshot.
+                        |
+                        | If the DB record cannot be found, leave the
+                        | snapshot in MikroTik so we can inspect/retry it.
+                        */
+                        if (!$voucher) {
+                            $this->warn(
+                                'Usage snapshot found but JODEKA voucher '
+                                . 'was not found: '
+                                . $username
+                            );
+
+                            continue;
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | PARSE SNAPSHOT SOURCE
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $source =
+                            $snapshotScript['source']
+                            ?? '';
+
+                        $snapshot =
+                            $this->parseUsageSnapshot(
+                                $source
+                            );
+
+                        if (!$snapshot) {
+                            $this->warn(
+                                'Invalid usage snapshot for '
+                                . $username
+                            );
+
+                            continue;
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | VERIFY SNAPSHOT USER
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            !empty($snapshot['user'])
+                            && strtoupper(
+                                $snapshot['user']
+                            ) !== strtoupper($username)
+                        ) {
+                            $this->warn(
+                                'Snapshot username mismatch for '
+                                . $username
+                            );
+
+                            continue;
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | FINAL BYTES
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $snapshotBytesIn =
+                            (int) (
+                                $snapshot['bytes-in']
+                                ?? 0
+                            );
+
+                        $snapshotBytesOut =
+                            (int) (
+                                $snapshot['bytes-out']
+                                ?? 0
+                            );
+
+                        if ($snapshotBytesIn > 0) {
+                            $voucher->bytes_in = max(
+                                (int) ($voucher->bytes_in ?? 0),
+                                $snapshotBytesIn
+                            );
+                        }
+
+                        if ($snapshotBytesOut > 0) {
+                            $voucher->bytes_out = max(
+                                (int) ($voucher->bytes_out ?? 0),
+                                $snapshotBytesOut
+                            );
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | FINAL PACKETS
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $snapshotPacketsIn =
+                            (int) (
+                                $snapshot['packets-in']
+                                ?? 0
+                            );
+
+                        $snapshotPacketsOut =
+                            (int) (
+                                $snapshot['packets-out']
+                                ?? 0
+                            );
+
+                        if ($snapshotPacketsIn > 0) {
+                            $voucher->packets_in = max(
+                                (int) ($voucher->packets_in ?? 0),
+                                $snapshotPacketsIn
+                            );
+                        }
+
+                        if ($snapshotPacketsOut > 0) {
+                            $voucher->packets_out = max(
+                                (int) ($voucher->packets_out ?? 0),
+                                $snapshotPacketsOut
+                            );
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | FINAL UPTIME
+                        |--------------------------------------------------------------------------
+                        |
+                        | Our MikroTik snapshot stores uptime in seconds.
+                        |
+                        */
+
+                        $snapshotUptime =
+                            (int) (
+                                $snapshot['uptime']
+                                ?? 0
+                            );
+
+                        if ($snapshotUptime > 0) {
+                            $voucher->mikrotik_uptime =
+                                $this->secondsToMikrotikUptime(
+                                    $snapshotUptime
+                                );
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | LAST SYNC
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $voucher->last_synced_at = now();
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | SAVE FIRST
+                        |--------------------------------------------------------------------------
+                        |
+                        | The MikroTik snapshot is NOT deleted until the
+                        | database save succeeds.
+                        |
+                        */
+
+                        $voucher->save();
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | REMOVE IMPORTED SNAPSHOT
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (isset($snapshotScript['.id'])) {
+                            $client
+                                ->query(
+                                    (new Query(
+                                        '/system/script/remove'
+                                    ))
+                                        ->equal(
+                                            '.id',
+                                            $snapshotScript['.id']
+                                        )
+                                )
+                                ->read();
+                        }
+
+                        $finalUsageImported++;
+
+                        $totalFinalBytes =
+                            (int) ($voucher->bytes_in ?? 0)
+                            +
+                            (int) ($voucher->bytes_out ?? 0);
+
+                        $this->info(
+                            'Final usage imported: '
+                            . $username
+                            . ' ['
+                            . $this->formatBytesForConsole(
+                                $totalFinalBytes
+                            )
+                            . ']'
+                        );
+
+                    } catch (\Throwable $e) {
+                        /*
+                        | Do not delete snapshot if something fails.
+                        | It will remain available for the next sync.
+                        */
+                        $this->warn(
+                            'Could not import final usage snapshot for '
+                            . $username
+                            . ': '
+                            . $e->getMessage()
+                        );
+                    }
+                }
+
+                /*
+                |--------------------------------------------------------------------------
                 | FIND EXPIRED VOUCHERS
                 |--------------------------------------------------------------------------
                 */
@@ -457,6 +736,9 @@ class SyncHotspotVouchers extends Command
                         |--------------------------------------------------------------------------
                         | CAPTURE FINAL USER COUNTERS
                         |--------------------------------------------------------------------------
+                        |
+                        | This remains as an additional fallback.
+                        |
                         */
 
                         $finalUsers = $client
@@ -506,7 +788,8 @@ class SyncHotspotVouchers extends Command
 
                             if (
                                 $this->uptimeHasUsage(
-                                    $finalUser['uptime'] ?? null
+                                    $finalUser['uptime']
+                                    ?? null
                                 )
                             ) {
                                 $voucher->mikrotik_uptime =
@@ -647,6 +930,8 @@ class SyncHotspotVouchers extends Command
             . $imported
             . ', Updated: '
             . $updated
+            . ', Final Usage Imported: '
+            . $finalUsageImported
             . ', Expired: '
             . $expired
             . ', Deleted from MikroTik: '
@@ -654,6 +939,64 @@ class SyncHotspotVouchers extends Command
         );
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Parse final usage snapshot stored inside MikroTik /system script.
+     *
+     * Example source:
+     *
+     * user=JDK61624
+     * |uptime=300
+     * |bytes-in=198461
+     * |bytes-out=235836
+     * |bytes-total=434297
+     * |packets-in=934
+     * |packets-out=879
+     */
+    private function parseUsageSnapshot(
+        ?string $source
+    ): array {
+        if (!$source) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach (explode('|', $source) as $part) {
+            if (!str_contains($part, '=')) {
+                continue;
+            }
+
+            [$key, $value] =
+                array_pad(
+                    explode(
+                        '=',
+                        $part,
+                        2
+                    ),
+                    2,
+                    null
+                );
+
+            $key =
+                trim(
+                    (string) $key
+                );
+
+            $value =
+                trim(
+                    (string) $value
+                );
+
+            if ($key === '') {
+                continue;
+            }
+
+            $result[$key] = $value;
+        }
+
+        return $result;
     }
 
     /**
@@ -711,40 +1054,65 @@ class SyncHotspotVouchers extends Command
         |--------------------------------------------------------------------------
         | HANDLE MIKROTIK FORMAT
         |--------------------------------------------------------------------------
-        |
-        | Examples:
-        |
-        | 5m
-        | 4m31s
-        | 12h4m20s
-        | 2d5h
-        | 1w2d3h4m5s
-        |
         */
 
         $totalSeconds = 0;
 
-        if (preg_match('/(\d+)w/', $uptime, $matches)) {
+        if (
+            preg_match(
+                '/(\d+)w/',
+                $uptime,
+                $matches
+            )
+        ) {
             $totalSeconds +=
-                (int) $matches[1] * 604800;
+                (int) $matches[1]
+                * 604800;
         }
 
-        if (preg_match('/(\d+)d/', $uptime, $matches)) {
+        if (
+            preg_match(
+                '/(\d+)d/',
+                $uptime,
+                $matches
+            )
+        ) {
             $totalSeconds +=
-                (int) $matches[1] * 86400;
+                (int) $matches[1]
+                * 86400;
         }
 
-        if (preg_match('/(\d+)h/', $uptime, $matches)) {
+        if (
+            preg_match(
+                '/(\d+)h/',
+                $uptime,
+                $matches
+            )
+        ) {
             $totalSeconds +=
-                (int) $matches[1] * 3600;
+                (int) $matches[1]
+                * 3600;
         }
 
-        if (preg_match('/(\d+)m/', $uptime, $matches)) {
+        if (
+            preg_match(
+                '/(\d+)m/',
+                $uptime,
+                $matches
+            )
+        ) {
             $totalSeconds +=
-                (int) $matches[1] * 60;
+                (int) $matches[1]
+                * 60;
         }
 
-        if (preg_match('/(\d+)s/', $uptime, $matches)) {
+        if (
+            preg_match(
+                '/(\d+)s/',
+                $uptime,
+                $matches
+            )
+        ) {
             $totalSeconds +=
                 (int) $matches[1];
         }
@@ -753,15 +1121,99 @@ class SyncHotspotVouchers extends Command
     }
 
     /**
+     * Convert seconds to MikroTik-style uptime.
+     *
+     * Examples:
+     *
+     * 300  -> 5m
+     * 330  -> 5m30s
+     * 3665 -> 1h1m5s
+     */
+    private function secondsToMikrotikUptime(
+        int $seconds
+    ): string {
+        if ($seconds <= 0) {
+            return '0s';
+        }
+
+        $weeks =
+            intdiv(
+                $seconds,
+                604800
+            );
+
+        $seconds %= 604800;
+
+        $days =
+            intdiv(
+                $seconds,
+                86400
+            );
+
+        $seconds %= 86400;
+
+        $hours =
+            intdiv(
+                $seconds,
+                3600
+            );
+
+        $seconds %= 3600;
+
+        $minutes =
+            intdiv(
+                $seconds,
+                60
+            );
+
+        $seconds %= 60;
+
+        $result = '';
+
+        if ($weeks > 0) {
+            $result .=
+                $weeks . 'w';
+        }
+
+        if ($days > 0) {
+            $result .=
+                $days . 'd';
+        }
+
+        if ($hours > 0) {
+            $result .=
+                $hours . 'h';
+        }
+
+        if ($minutes > 0) {
+            $result .=
+                $minutes . 'm';
+        }
+
+        if ($seconds > 0) {
+            $result .=
+                $seconds . 's';
+        }
+
+        return $result !== ''
+            ? $result
+            : '0s';
+    }
+
+    /**
      * Check whether MikroTik uptime represents actual usage.
      */
-    private function uptimeHasUsage(?string $uptime): bool
-    {
+    private function uptimeHasUsage(
+        ?string $uptime
+    ): bool {
         if (!$uptime) {
             return false;
         }
 
-        $uptime = trim($uptime);
+        $uptime =
+            trim(
+                $uptime
+            );
 
         return !in_array(
             $uptime,
@@ -773,6 +1225,42 @@ class SyncHotspotVouchers extends Command
             ],
             true
         );
+    }
+
+    /**
+     * Format bytes for console messages.
+     */
+    private function formatBytesForConsole(
+        int $bytes
+    ): string {
+        if ($bytes <= 0) {
+            return '0 MB';
+        }
+
+        if ($bytes >= 1073741824) {
+            return number_format(
+                $bytes / 1073741824,
+                2
+            ) . ' GB';
+        }
+
+        if ($bytes >= 1048576) {
+            return number_format(
+                $bytes / 1048576,
+                2
+            ) . ' MB';
+        }
+
+        if ($bytes >= 1024) {
+            return number_format(
+                $bytes / 1024,
+                2
+            ) . ' KB';
+        }
+
+        return number_format(
+            $bytes
+        ) . ' B';
     }
 
     /**
@@ -945,9 +1433,11 @@ class SyncHotspotVouchers extends Command
                 $router->password
             ),
 
-            'port' => (int) $router->api_port,
+            'port' =>
+                (int) $router->api_port,
 
-            'ssl' => (bool) $router->use_ssl,
+            'ssl' =>
+                (bool) $router->use_ssl,
 
             'timeout' => 5,
         ]);
@@ -963,19 +1453,29 @@ class SyncHotspotVouchers extends Command
     ) {
         return match ($unit) {
             'minutes' =>
-                $start->addMinutes($value),
+                $start->addMinutes(
+                    $value
+                ),
 
             'hours' =>
-                $start->addHours($value),
+                $start->addHours(
+                    $value
+                ),
 
             'days' =>
-                $start->addDays($value),
+                $start->addDays(
+                    $value
+                ),
 
             'weeks' =>
-                $start->addWeeks($value),
+                $start->addWeeks(
+                    $value
+                ),
 
             'months' =>
-                $start->addMonths($value),
+                $start->addMonths(
+                    $value
+                ),
 
             default =>
                 $start,
