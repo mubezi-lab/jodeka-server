@@ -187,10 +187,6 @@ class SyncHotspotVouchers extends Command
                     |--------------------------------------------------------------------------
                     | READ PERMANENT MIKROTIK USER COUNTERS
                     |--------------------------------------------------------------------------
-                    |
-                    | These counters remain useful even when the customer
-                    | is no longer in /ip/hotspot/active.
-                    |
                     */
 
                     $userBytesIn =
@@ -264,7 +260,6 @@ class SyncHotspotVouchers extends Command
                     | USED STATUS FROM HISTORICAL MIKROTIK COUNTERS
                     |--------------------------------------------------------------------------
                     |
-                    | IMPORTANT:
                     | Used does NOT mean currently online.
                     | It means the voucher has been used at least once.
                     |
@@ -284,18 +279,50 @@ class SyncHotspotVouchers extends Command
                         $activeUsersByUsername->get($username);
 
                     if ($activeUser) {
+
                         /*
                         |--------------------------------------------------------------------------
                         | FIRST LOGIN
                         |--------------------------------------------------------------------------
                         |
-                        | We only create first_login_at when JODEKA actually
-                        | sees the voucher active.
+                        | IMPORTANT:
+                        |
+                        | Do not use the JODEKA sync time as first login.
+                        |
+                        | MikroTik tells us how long the current Hotspot
+                        | session has already been active.
+                        |
+                        | Example:
+                        |
+                        | JODEKA sync time = 05:35:26
+                        | MikroTik uptime   = 52s
+                        |
+                        | Real login time   = 05:34:34
                         |
                         */
 
                         if (!$voucher->first_login_at) {
-                            $voucher->first_login_at = now();
+
+                            $activeUptime =
+                                $activeUser['uptime'] ?? null;
+
+                            $uptimeSeconds =
+                                $this->parseMikrotikUptimeToSeconds(
+                                    $activeUptime
+                                );
+
+                            if ($uptimeSeconds > 0) {
+                                $voucher->first_login_at =
+                                    now()->subSeconds(
+                                        $uptimeSeconds
+                                    );
+                            } else {
+                                /*
+                                | Fallback only if MikroTik has not yet
+                                | reported a usable active uptime.
+                                */
+                                $voucher->first_login_at = now();
+                            }
 
                             $voucher->used_at =
                                 $voucher->first_login_at;
@@ -369,9 +396,10 @@ class SyncHotspotVouchers extends Command
                         }
 
                         /*
-                        | Prefer the permanent user uptime when available.
+                        | Prefer permanent user uptime when available.
                         | Otherwise use active-session uptime.
                         */
+
                         if (!$this->uptimeHasUsage($userUptime)) {
                             if (isset($activeUser['uptime'])) {
                                 $voucher->mikrotik_uptime =
@@ -424,6 +452,7 @@ class SyncHotspotVouchers extends Command
 
                 foreach ($expiredVouchers as $voucher) {
                     try {
+
                         /*
                         |--------------------------------------------------------------------------
                         | CAPTURE FINAL USER COUNTERS
@@ -625,6 +654,102 @@ class SyncHotspotVouchers extends Command
         );
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Convert MikroTik uptime string to seconds.
+     *
+     * Examples:
+     *
+     * 52s          = 52 seconds
+     * 4m31s        = 271 seconds
+     * 1h2m5s       = 3725 seconds
+     * 2d3h         = 183600 seconds
+     * 1w2d3h4m5s   = total seconds
+     */
+    private function parseMikrotikUptimeToSeconds(
+        ?string $uptime
+    ): int {
+        if (!$uptime) {
+            return 0;
+        }
+
+        $uptime = trim($uptime);
+
+        if (
+            $uptime === ''
+            || $uptime === '0s'
+            || $uptime === '00:00:00'
+            || $uptime === '0:00:00'
+        ) {
+            return 0;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | HANDLE HH:MM:SS FORMAT
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            preg_match(
+                '/^(\d+):(\d+):(\d+)$/',
+                $uptime,
+                $matches
+            )
+        ) {
+            $hours = (int) $matches[1];
+            $minutes = (int) $matches[2];
+            $seconds = (int) $matches[3];
+
+            return ($hours * 3600)
+                + ($minutes * 60)
+                + $seconds;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | HANDLE MIKROTIK FORMAT
+        |--------------------------------------------------------------------------
+        |
+        | Examples:
+        |
+        | 5m
+        | 4m31s
+        | 12h4m20s
+        | 2d5h
+        | 1w2d3h4m5s
+        |
+        */
+
+        $totalSeconds = 0;
+
+        if (preg_match('/(\d+)w/', $uptime, $matches)) {
+            $totalSeconds +=
+                (int) $matches[1] * 604800;
+        }
+
+        if (preg_match('/(\d+)d/', $uptime, $matches)) {
+            $totalSeconds +=
+                (int) $matches[1] * 86400;
+        }
+
+        if (preg_match('/(\d+)h/', $uptime, $matches)) {
+            $totalSeconds +=
+                (int) $matches[1] * 3600;
+        }
+
+        if (preg_match('/(\d+)m/', $uptime, $matches)) {
+            $totalSeconds +=
+                (int) $matches[1] * 60;
+        }
+
+        if (preg_match('/(\d+)s/', $uptime, $matches)) {
+            $totalSeconds +=
+                (int) $matches[1];
+        }
+
+        return $totalSeconds;
     }
 
     /**
