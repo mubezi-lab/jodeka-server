@@ -86,7 +86,7 @@ class HotspotVoucher extends Model
 
         /*
         |--------------------------------------------------------------------------
-        | CONVERT BYTES TO MB
+        | CONVERT USAGE TO MB
         |--------------------------------------------------------------------------
         */
 
@@ -94,17 +94,51 @@ class HotspotVoucher extends Model
 
         /*
         |--------------------------------------------------------------------------
-        | MOBILE DATA RATE
+        | MOBILE DATA BUNDLE RATES
         |--------------------------------------------------------------------------
         |
-        | TZS 500 = 246 MB
+        | TZS 500   = 246 MB
+        | TZS 1,000 = 492 MB
+        | TZS 2,000 = 985 MB
+        | TZS 2,100 = 1 GB
+        | TZS 3,000 = 1.45 GB
         |
-        | Therefore:
-        | 1 MB = 500 / 246
+        | We calculate the price-per-MB for the bundle range that corresponds
+        | to the amount of data used.
+        |
+        | IMPORTANT:
+        | We are NOT charging the full bundle price.
+        | We calculate the proportional value of the data actually consumed.
         |
         */
 
-        $pricePerMb = 500 / 246;
+        if ($totalMb <= 246) {
+
+            $pricePerMb = 500 / 246;
+
+        } elseif ($totalMb <= 492) {
+
+            $pricePerMb = 1000 / 492;
+
+        } elseif ($totalMb <= 985) {
+
+            $pricePerMb = 2000 / 985;
+
+        } elseif ($totalMb <= 1024) {
+
+            $pricePerMb = 2100 / 1024;
+
+        } else {
+
+            /*
+            | 1.45 GB = 1.45 × 1024 MB
+            |
+            | For usage above 1.45 GB we continue using
+            | the rate of the largest normal bundle.
+            */
+
+            $pricePerMb = 3000 / (1.45 * 1024);
+        }
 
         /*
         |--------------------------------------------------------------------------
