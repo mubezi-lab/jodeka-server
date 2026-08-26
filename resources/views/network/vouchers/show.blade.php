@@ -9,6 +9,13 @@
         $bytesOut = (int) ($voucher->bytes_out ?? 0);
         $totalBytes = $bytesIn + $bytesOut;
 
+        $dataValue = $voucher->data_value;
+        $valueGained = $voucher->value_gained;
+        $valueGap = $voucher->value_gap;
+        $savingsPercentage = $voucher->savings_percentage;
+
+        $voucherPrice = (int) round((float) ($voucher->price ?? 0));
+
         $formatBytes = function ($bytes) {
             if ($bytes <= 0) {
                 return '0 MB';
@@ -223,8 +230,155 @@
             </div>
 
 
-            {{-- Device --}}
+            {{-- Value & Savings --}}
             <div class="p-6 border-t">
+
+                <div class="mb-4">
+                    <h3 class="font-bold text-lg">
+                        Value & Savings
+                    </h3>
+
+                    <p class="text-sm text-gray-500 mt-1">
+                        Estimated value compared with equivalent mobile data.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                    {{-- Voucher Price --}}
+                    <div class="bg-gray-50 border rounded-lg p-4">
+
+                        <div class="text-sm text-gray-500">
+                            Voucher Price
+                        </div>
+
+                        <div class="text-xl font-bold text-gray-900 mt-1">
+                            TZS {{ number_format($voucherPrice) }}
+                        </div>
+
+                    </div>
+
+
+                    {{-- Data Value --}}
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+
+                        <div class="text-sm text-blue-700">
+                            Data Value
+                        </div>
+
+                        <div class="text-xl font-bold text-blue-800 mt-1">
+                            TZS {{ number_format($dataValue) }}
+                        </div>
+
+                    </div>
+
+
+                    {{-- Value Gained / Gap --}}
+                    @if($totalBytes <= 0)
+
+                        <div class="bg-gray-50 border rounded-lg p-4">
+
+                            <div class="text-sm text-gray-500">
+                                Value Gained
+                            </div>
+
+                            <div class="text-xl font-bold text-gray-700 mt-1">
+                                -
+                            </div>
+
+                            <div class="text-xs text-gray-500 mt-1">
+                                No usage recorded
+                            </div>
+
+                        </div>
+
+                    @elseif($valueGained > 0)
+
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+
+                            <div class="text-sm text-green-700">
+                                Value Gained
+                            </div>
+
+                            <div class="text-xl font-bold text-green-800 mt-1">
+                                + TZS {{ number_format($valueGained) }}
+                            </div>
+
+                            <div class="text-xs text-green-700 mt-1">
+                                More value than voucher price
+                            </div>
+
+                        </div>
+
+                    @elseif($valueGap > 0)
+
+                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+
+                            <div class="text-sm text-orange-700">
+                                Value Gap
+                            </div>
+
+                            <div class="text-xl font-bold text-orange-800 mt-1">
+                                TZS {{ number_format($valueGap) }}
+                            </div>
+
+                            <div class="text-xs text-orange-700 mt-1">
+                                Usage value below voucher price
+                            </div>
+
+                        </div>
+
+                    @else
+
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+
+                            <div class="text-sm text-green-700">
+                                Value
+                            </div>
+
+                            <div class="text-xl font-bold text-green-800 mt-1">
+                                Break Even
+                            </div>
+
+                            <div class="text-xs text-green-700 mt-1">
+                                Data value equals voucher price
+                            </div>
+
+                        </div>
+
+                    @endif
+
+
+                    {{-- Savings --}}
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+
+                        <div class="text-sm text-green-700">
+                            Savings
+                        </div>
+
+                        @if($valueGained > 0)
+
+                            <div class="text-xl font-bold text-green-800 mt-1">
+                                {{ number_format($savingsPercentage, 2) }}%
+                            </div>
+
+                        @else
+
+                            <div class="text-xl font-bold text-gray-700 mt-1">
+                                0%
+                            </div>
+
+                        @endif
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {{-- Device --}}
+            <div class="p-6 border-t bg-gray-50">
 
                 <h3 class="font-bold text-lg mb-4">
                     Connected Device
@@ -258,7 +412,7 @@
 
 
             {{-- System --}}
-            <div class="p-6 border-t bg-gray-50">
+            <div class="p-6 border-t">
 
                 <h3 class="font-bold text-lg mb-4">
                     System Information
