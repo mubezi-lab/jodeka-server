@@ -36,6 +36,7 @@ use App\Http\Controllers\FixedExpensePaymentController;
 use App\Http\Controllers\NetworkRouterController;
 use App\Http\Controllers\HotspotProfileController;
 use App\Http\Controllers\HotspotVoucherController;
+use App\Http\Controllers\WifiPortalController;
 
 use App\Http\Controllers\DailyCashEntryController;
 
@@ -50,6 +51,22 @@ Route::get('/', function () {
     return view('auth.login');
 
 })->name('home');
+
+/*
+|--------------------------------------------------------------------------
+| PUBLIC WI-FI CAPTIVE PORTAL
+|--------------------------------------------------------------------------
+|
+| This route must remain PUBLIC.
+| Hotspot customers are not Laravel users and must not be required
+| to authenticate with the JODEKA admin system.
+|
+*/
+
+Route::get('/wifi', [
+    WifiPortalController::class,
+    'index'
+])->name('wifi.portal');
 
 /*
 |--------------------------------------------------------------------------
