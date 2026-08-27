@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\StockApiController;
 use App\Http\Controllers\Api\LivestockApiController;
 use App\Http\Controllers\Api\LoanApiController;
 use App\Http\Controllers\Api\SavingApiController;
+use App\Http\Controllers\HotspotPaymentSmsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,6 +24,17 @@ Route::get('/test', function () {
     ]);
 
 });
+
+/*
+|--------------------------------------------------------------------------
+| HOTSPOT PAYMENT SMS
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/hotspot/payments/sms', [
+    HotspotPaymentSmsController::class,
+    'store'
+]);
 
 /*
 |--------------------------------------------------------------------------

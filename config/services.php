@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'hotspot_sms' => [
+        'api_key' => env('HOTSPOT_SMS_API_KEY'),
+    ],
+
 ];
