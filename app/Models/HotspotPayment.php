@@ -18,11 +18,15 @@ class HotspotPayment extends Model
         'raw_sms',
         'status',
         'voucher_id',
+        'claimed_at',
+        'claimed_by_mac',
+        'claimed_by_ip',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'paid_at' => 'datetime',
+        'claimed_at' => 'datetime',
     ];
 
     public function profile(): BelongsTo

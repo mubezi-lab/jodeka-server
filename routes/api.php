@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\LivestockApiController;
 use App\Http\Controllers\Api\LoanApiController;
 use App\Http\Controllers\Api\SavingApiController;
 use App\Http\Controllers\HotspotPaymentSmsController;
+use App\Http\Controllers\HotspotPaymentVerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +35,21 @@ Route::get('/test', function () {
 Route::post('/hotspot/payments/sms', [
     HotspotPaymentSmsController::class,
     'store'
+]);
+
+/*
+|--------------------------------------------------------------------------
+| HOTSPOT PAYMENT VERIFICATION
+|--------------------------------------------------------------------------
+|
+| Public endpoint used by the Jodeka WiFi captive portal.
+| Customer enters the payment reference number after paying.
+|
+*/
+
+Route::post('/hotspot/payments/verify', [
+    HotspotPaymentVerificationController::class,
+    'verify'
 ]);
 
 /*
