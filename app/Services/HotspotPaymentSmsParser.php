@@ -9,19 +9,41 @@ class HotspotPaymentSmsParser
 {
     public function parse(string $sms): array
     {
-        $sms = trim(preg_replace('/\s+/', ' ', $sms));
+        $sms = trim(
+            preg_replace('/\s+/', ' ', $sms)
+        );
 
         if (! str_contains($sms, 'Kumbukumbu No.:')) {
-            throw new InvalidArgumentException('SMS hii haitambuliki kama SMS ya malipo ya Lipa Kwa Simu.');
+            throw new InvalidArgumentException(
+                'SMS hii haitambuliki kama SMS ya malipo ya Lipa Kwa Simu.'
+            );
         }
 
         $provider = $this->detectProvider($sms);
 
-        preg_match('/TSh\s*([\d,]+(?:\.\d{1,2})?)/i', $sms, $amountMatch);
-        preg_match('/Kumbukumbu No\.:\s*(\d+)/i', $sms, $referenceMatch);
-        preg_match('/(\d{2}\/\d{2}\/\d{2})\s+(\d{2}:\d{2})/', $sms, $dateMatch);
+        preg_match(
+            '/TSh\s*([\d,]+(?:\.\d{1,2})?)/i',
+            $sms,
+            $amountMatch
+        );
 
-        [$payerPhone, $payerName] = $this->extractPayer($sms, $provider);
+        preg_match(
+            '/Kumbukumbu No\.:\s*(\d+)/i',
+            $sms,
+            $referenceMatch
+        );
+
+        preg_match(
+            '/(\d{2}\/\d{2}\/\d{2})\s+(\d{2}:\d{2})/',
+            $sms,
+            $dateMatch
+        );
+
+        [$payerPhone, $payerName] =
+            $this->extractPayer(
+                $sms,
+                $provider
+            );
 
         if (
             empty($amountMatch[1]) ||
@@ -29,10 +51,22 @@ class HotspotPaymentSmsParser
             empty($dateMatch[1]) ||
             empty($dateMatch[2])
         ) {
-            throw new InvalidArgumentException('Baadhi ya taarifa muhimu hazikupatikana kwenye SMS.');
+            throw new InvalidArgumentException(
+                'Baadhi ya taarifa muhimu hazikupatikana kwenye SMS.'
+            );
         }
 
-        $amount = (float) str_replace(',', '', $amountMatch[1]);
+        if (! $payerPhone) {
+            throw new InvalidArgumentException(
+                'Namba ya simu ya aliyefanya malipo haikupatikana kwenye SMS.'
+            );
+        }
+
+        $amount = (float) str_replace(
+            ',',
+            '',
+            $amountMatch[1]
+        );
 
         $paidAt = Carbon::createFromFormat(
             'd/m/y H:i',
@@ -43,7 +77,7 @@ class HotspotPaymentSmsParser
         return [
             'provider' => $provider,
             'amount' => $amount,
-            'payer_phone' => $payerPhone,
+            'payer_phone' => $this->normalizePhone($payerPhone),
             'payer_name' => $payerName,
             'reference' => $referenceMatch[1],
             'paid_at' => $paidAt,
@@ -69,11 +103,18 @@ class HotspotPaymentSmsParser
         return 'UNKNOWN';
     }
 
-    private function extractPayer(string $sms, string $provider): array
-    {
+    private function extractPayer(
+        string $sms,
+        string $provider
+    ): array {
         $pattern = match ($provider) {
-            'YAS' => '/kutoka kwa\s+(255\d+)\s*-\s*(.+?)\.\s*Kumbukumbu No\.:/i',
-            'MPESA', 'HALOPESA' => '/kutoka kwa\s+[^;]+;\s*(255\d+)\s*-\s*(.+?)\s+Kumbukumbu No\.:/i',
+
+            'YAS' =>
+                '/kutoka kwa\s+(255\d+)\s*-\s*(.+?)\.\s*Kumbukumbu No\.:/i',
+
+            'MPESA', 'HALOPESA' =>
+                '/kutoka kwa\s+[^;]+;\s*(255\d+)\s*-\s*(.+?)\s+Kumbukumbu No\.:/i',
+
             default => null,
         };
 
@@ -81,11 +122,48 @@ class HotspotPaymentSmsParser
             return [null, null];
         }
 
-        preg_match($pattern, $sms, $match);
+        preg_match(
+            $pattern,
+            $sms,
+            $match
+        );
 
         return [
             $match[1] ?? null,
-            isset($match[2]) ? trim($match[2], " .") : null,
+
+            isset($match[2])
+                ? trim($match[2], " .")
+                : null,
         ];
+    }
+
+    private function normalizePhone(
+        string $phone
+    ): string {
+        $phone = preg_replace(
+            '/\D+/',
+            '',
+            $phone
+        );
+
+        if (str_starts_with($phone, '255')) {
+            return $phone;
+        }
+
+        if (
+            str_starts_with($phone, '0') &&
+            strlen($phone) === 10
+        ) {
+            return '255' . substr(
+                $phone,
+                1
+            );
+        }
+
+        if (strlen($phone) === 9) {
+            return '255' . $phone;
+        }
+
+        return $phone;
     }
 }

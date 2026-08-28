@@ -462,7 +462,7 @@
         /* INPUTS */
 
         .voucher-input,
-        .reference-input {
+        .payment-input {
             width: 100%;
             margin-bottom: 11px;
             padding: 15px 17px;
@@ -482,12 +482,12 @@
         }
 
         .voucher-input::placeholder,
-        .reference-input::placeholder {
+        .payment-input::placeholder {
             color: #92a1b7;
         }
 
         .voucher-input:focus,
-        .reference-input:focus {
+        .payment-input:focus {
             border-color: rgba(0, 223, 130, .65);
         }
 
@@ -748,7 +748,7 @@
             }
 
             .voucher-input,
-            .reference-input {
+            .payment-input {
                 margin-bottom: 9px;
                 padding: 12px 13px;
                 font-size: 13px;
@@ -941,7 +941,9 @@
 
                 <button type="button" class="package" data-amount="200" onclick="selectPackage(this)">
 
-                    <div class="package-price">200 TZS</div>
+                    <div class="package-price">
+                        200 TZS
+                    </div>
 
                     <div class="package-duration" data-sw="Dakika 30" data-en="30 Minutes">
                         Dakika 30
@@ -952,7 +954,9 @@
 
                 <button type="button" class="package" data-amount="500" onclick="selectPackage(this)">
 
-                    <div class="package-price">500 TZS</div>
+                    <div class="package-price">
+                        500 TZS
+                    </div>
 
                     <div class="package-duration" data-sw="Saa 12" data-en="12 Hours">
                         Saa 12
@@ -963,7 +967,9 @@
 
                 <button type="button" class="package" data-amount="1000" onclick="selectPackage(this)">
 
-                    <div class="package-price">1,000 TZS</div>
+                    <div class="package-price">
+                        1,000 TZS
+                    </div>
 
                     <div class="package-duration" data-sw="Saa 24" data-en="24 Hours">
                         Saa 24
@@ -974,7 +980,9 @@
 
                 <button type="button" class="package" data-amount="3000" onclick="selectPackage(this)">
 
-                    <div class="package-price">3,000 TZS</div>
+                    <div class="package-price">
+                        3,000 TZS
+                    </div>
 
                     <div class="package-duration" data-sw="Siku 7" data-en="7 Days">
                         Siku 7
@@ -1019,21 +1027,20 @@
                     KIASI CHA KULIPA
                 </div>
 
-                <div id="payAmountText" class="pay-amount"></div>
+                <div id="payAmountText" class="pay-amount">
+                </div>
 
             </div>
 
-            <div class="reference-note"
-                data-sw="Baada ya kulipa, ingiza Kumbukumbu No. iliyo kwenye SMS ya muamala wako."
-                data-en="After paying, enter the Reference Number shown in your transaction SMS.">
+            <div class="reference-note" data-sw="Baada ya kulipa, ingiza namba ya simu uliyotumia kufanya malipo."
+                data-en="After paying, enter the phone number you used to make the payment.">
 
-                Baada ya kulipa, ingiza Kumbukumbu No.
-                iliyo kwenye SMS ya muamala wako.
+                Baada ya kulipa, ingiza namba ya simu uliyotumia kufanya malipo.
 
             </div>
 
-            <input type="text" id="paymentReference" class="reference-input" inputmode="numeric" autocomplete="off"
-                placeholder="Ingiza Kumbukumbu No.">
+            <input type="tel" id="payerPhone" class="payment-input" inputmode="tel" autocomplete="tel" maxlength="16"
+                placeholder="Mfano: 0659840000">
 
             <button type="button" id="verifyPaymentButton" class="verify-button" onclick="verifyPayment()">
 
@@ -1129,7 +1136,6 @@
 
             </table>
 
-
             <div class="reference-note" style="margin-top: 14px;"
                 data-sw="Lipia Cash ofisini kwetu kulingana na kifurushi unachotaka. Utapewa Voucher Code; ingiza voucher hiyo hapa."
                 data-en="Pay cash at our office according to the package you want. You will receive a Voucher Code; enter it below.">
@@ -1138,7 +1144,6 @@
                 Utapewa Voucher Code; ingiza voucher hiyo hapa.
 
             </div>
-
 
             <form id="mikrotikLoginForm" method="post" action="{{ $loginUrl ?: '#' }}"
                 onsubmit="return prepareLogin(event)">
@@ -1231,6 +1236,12 @@
         const deviceIp = @json($ip);
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | FLOW VISIBILITY
+        |--------------------------------------------------------------------------
+        */
+
         function hideAllFlows() {
 
             document
@@ -1238,10 +1249,12 @@
                 .classList
                 .add('hidden');
 
+
             document
                 .getElementById('lipaNumberCard')
                 .classList
                 .add('hidden');
+
 
             document
                 .getElementById('cashVoucherCard')
@@ -1254,33 +1267,44 @@
 
             hideAllFlows();
 
+
             document
                 .getElementById('welcomeCard')
                 .classList
                 .remove('hidden');
+
 
             document
                 .getElementById('mainChoiceCard')
                 .classList
                 .remove('hidden');
 
+
             selectedAmount = null;
+
 
             document
                 .querySelectorAll('.package')
                 .forEach(function (element) {
-                    element.classList.remove('selected');
+
+                    element
+                        .classList
+                        .remove('selected');
                 });
 
+
             document
-                .getElementById('paymentReference')
+                .getElementById('payerPhone')
                 .value = '';
+
 
             document
                 .getElementById('voucher')
                 .value = '';
 
+
             clearPaymentStatus();
+
 
             document
                 .getElementById('verifyPaymentButton')
@@ -1288,19 +1312,28 @@
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | PHONE PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
         function openPhonePayment() {
 
             hideAllFlows();
+
 
             document
                 .getElementById('welcomeCard')
                 .classList
                 .add('hidden');
 
+
             document
                 .getElementById('mainChoiceCard')
                 .classList
                 .add('hidden');
+
 
             document
                 .getElementById('phonePackagesCard')
@@ -1314,43 +1347,58 @@
             document
                 .querySelectorAll('.package')
                 .forEach(function (packageElement) {
-                    packageElement.classList.remove('selected');
+
+                    packageElement
+                        .classList
+                        .remove('selected');
                 });
 
-            element.classList.add('selected');
+
+            element
+                .classList
+                .add('selected');
+
 
             selectedAmount =
                 Number(element.dataset.amount);
 
+
             document
                 .getElementById('payAmountText')
                 .textContent =
-                formatMoney(selectedAmount) + ' TZS';
+                formatMoney(selectedAmount)
+                + ' TZS';
+
 
             document
                 .getElementById('phonePackagesCard')
                 .classList
                 .add('hidden');
 
+
             document
                 .getElementById('lipaNumberCard')
                 .classList
                 .remove('hidden');
 
+
             document
-                .getElementById('paymentReference')
+                .getElementById('payerPhone')
                 .value = '';
 
+
             clearPaymentStatus();
+
 
             document
                 .getElementById('verifyPaymentButton')
                 .disabled = false;
 
+
             setTimeout(function () {
 
                 document
-                    .getElementById('paymentReference')
+                    .getElementById('payerPhone')
                     .focus();
 
             }, 200);
@@ -1364,16 +1412,20 @@
                 .classList
                 .add('hidden');
 
+
             document
                 .getElementById('phonePackagesCard')
                 .classList
                 .remove('hidden');
 
+
             document
-                .getElementById('paymentReference')
+                .getElementById('payerPhone')
                 .value = '';
 
+
             clearPaymentStatus();
+
 
             document
                 .getElementById('verifyPaymentButton')
@@ -1381,24 +1433,34 @@
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | CASH / VOUCHER
+        |--------------------------------------------------------------------------
+        */
+
         function openCashVoucher() {
 
             hideAllFlows();
+
 
             document
                 .getElementById('welcomeCard')
                 .classList
                 .add('hidden');
 
+
             document
                 .getElementById('mainChoiceCard')
                 .classList
                 .add('hidden');
 
+
             document
                 .getElementById('cashVoucherCard')
                 .classList
                 .remove('hidden');
+
 
             setTimeout(function () {
 
@@ -1410,13 +1472,20 @@
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | VERIFY PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
         async function verifyPayment() {
 
-            const reference =
+            const payerPhone =
                 document
-                    .getElementById('paymentReference')
+                    .getElementById('payerPhone')
                     .value
                     .trim();
+
 
             if (!selectedAmount) {
 
@@ -1431,18 +1500,20 @@
                 return;
             }
 
-            if (!reference) {
+
+            if (!payerPhone) {
 
                 showPaymentStatus(
                     translate(
-                        'Ingiza Kumbukumbu No. ya muamala.',
-                        'Enter the transaction Reference Number.'
+                        'Ingiza namba ya simu uliyotumia kulipia.',
+                        'Enter the phone number you used to make the payment.'
                     ),
                     'error'
                 );
 
                 return;
             }
+
 
             if (!deviceMac) {
 
@@ -1457,11 +1528,14 @@
                 return;
             }
 
+
             const button =
                 document
                     .getElementById('verifyPaymentButton');
 
+
             button.disabled = true;
+
 
             showPaymentStatus(
                 translate(
@@ -1471,46 +1545,64 @@
                 'info'
             );
 
+
             try {
 
                 const response =
                     await fetch(
-                        '/api/hotspot/payments/verify', {
-                        method: 'POST',
+                        '/api/hotspot/payments/verify',
+                        {
+                            method: 'POST',
 
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
+                            headers: {
+                                'Content-Type':
+                                    'application/json',
 
-                        body:
-                            JSON.stringify({
-                                reference: reference,
-                                amount: selectedAmount,
-                                mac: deviceMac,
-                                ip: deviceIp
-                            })
-                    }
+                                'Accept':
+                                    'application/json'
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    payer_phone: payerPhone,
+                                    amount: selectedAmount,
+                                    mac: deviceMac,
+                                    ip: deviceIp
+                                })
+                        }
                     );
+
 
                 let data = {};
 
+
                 try {
-                    data = await response.json();
+
+                    data =
+                        await response.json();
+
                 } catch (error) {
+
                     data = {};
                 }
 
-                if (!response.ok || !data.success) {
+
+                if (
+                    !response.ok
+                    ||
+                    !data.success
+                ) {
 
                     throw new Error(
-                        data.message ||
+                        data.message
+                        ||
                         translate(
                             'Malipo hayakuweza kuthibitishwa.',
                             'Payment could not be verified.'
                         )
                     );
                 }
+
 
                 if (!data.voucher) {
 
@@ -1522,6 +1614,7 @@
                     );
                 }
 
+
                 showPaymentStatus(
                     translate(
                         'Malipo yamethibitishwa. Inaunganisha internet...',
@@ -1530,11 +1623,15 @@
                     'success'
                 );
 
+
                 setTimeout(function () {
 
-                    loginWithVoucher(data.voucher);
+                    loginWithVoucher(
+                        data.voucher
+                    );
 
                 }, 700);
+
 
             } catch (error) {
 
@@ -1543,10 +1640,17 @@
                     'error'
                 );
 
+
                 button.disabled = false;
             }
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | AUTO LOGIN
+        |--------------------------------------------------------------------------
+        */
 
         function loginWithVoucher(voucherCode) {
 
@@ -1555,9 +1659,11 @@
                     .trim()
                     .toUpperCase();
 
+
             if (!voucher) {
                 return;
             }
+
 
             if (!loginUrl) {
 
@@ -1569,6 +1675,7 @@
                     'error'
                 );
 
+
                 document
                     .getElementById('verifyPaymentButton')
                     .disabled = false;
@@ -1576,23 +1683,33 @@
                 return;
             }
 
+
             document
                 .getElementById('voucher')
                 .value = voucher;
+
 
             document
                 .getElementById('username')
                 .value = voucher;
 
+
             document
                 .getElementById('password')
                 .value = voucher;
+
 
             document
                 .getElementById('mikrotikLoginForm')
                 .submit();
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | MANUAL VOUCHER LOGIN
+        |--------------------------------------------------------------------------
+        */
 
         function prepareLogin(event) {
 
@@ -1603,12 +1720,14 @@
                 return false;
             }
 
+
             const voucher =
                 document
                     .getElementById('voucher')
                     .value
                     .trim()
                     .toUpperCase();
+
 
             if (!voucher) {
 
@@ -1617,29 +1736,45 @@
                 return false;
             }
 
+
             document
                 .getElementById('voucher')
                 .value = voucher;
+
 
             document
                 .getElementById('username')
                 .value = voucher;
 
+
             document
                 .getElementById('password')
                 .value = voucher;
+
 
             return true;
         }
 
 
-        function showPaymentStatus(message, type) {
+        /*
+        |--------------------------------------------------------------------------
+        | STATUS
+        |--------------------------------------------------------------------------
+        */
+
+        function showPaymentStatus(
+            message,
+            type
+        ) {
 
             const status =
                 document
                     .getElementById('paymentStatus');
 
-            status.textContent = message;
+
+            status.textContent =
+                message;
+
 
             status.className =
                 'status-message ' + type;
@@ -1652,6 +1787,7 @@
                 document
                     .getElementById('paymentStatus');
 
+
             status.textContent = '';
 
             status.className =
@@ -1659,9 +1795,17 @@
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | LANGUAGE
+        |--------------------------------------------------------------------------
+        */
+
         function setLanguage(language) {
 
-            currentLanguage = language;
+            currentLanguage =
+                language;
+
 
             document
                 .querySelectorAll('[data-sw][data-en]')
@@ -1671,21 +1815,26 @@
                         element.dataset[language];
                 });
 
+
             const voucherInput =
                 document
                     .getElementById('voucher');
 
-            const referenceInput =
+
+            const phoneInput =
                 document
-                    .getElementById('paymentReference');
+                    .getElementById('payerPhone');
+
 
             if (language === 'sw') {
 
                 voucherInput.placeholder =
                     'Ingiza Voucher Code';
 
-                referenceInput.placeholder =
-                    'Ingiza Kumbukumbu No.';
+
+                phoneInput.placeholder =
+                    'Mfano: 0659840000';
+
 
                 document.documentElement.lang =
                     'sw';
@@ -1695,12 +1844,15 @@
                 voucherInput.placeholder =
                     'Enter Voucher Code';
 
-                referenceInput.placeholder =
-                    'Enter Reference Number';
+
+                phoneInput.placeholder =
+                    'Example: 0659840000';
+
 
                 document.documentElement.lang =
                     'en';
             }
+
 
             document
                 .getElementById('swButton')
@@ -1709,6 +1861,7 @@
                     'active',
                     language === 'sw'
                 );
+
 
             document
                 .getElementById('enButton')
@@ -1719,6 +1872,12 @@
                 );
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | HELPERS
+        |--------------------------------------------------------------------------
+        */
 
         function translate(sw, en) {
 
