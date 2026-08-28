@@ -57,10 +57,7 @@ class HotspotVoucherController extends Controller
         $activeUsers = [];
         $routerErrors = [];
 
-        $routers = NetworkRouter::where(
-            'enabled',
-            true
-        )->get();
+        $routers = NetworkRouter::where('enabled', true)->get();
 
         foreach ($routers as $router) {
             try {
@@ -68,71 +65,31 @@ class HotspotVoucherController extends Controller
 
                 $routerActiveUsers = $client
                     ->query(
-                        new Query(
-                            '/ip/hotspot/active/print'
-                        )
+                        new Query('/ip/hotspot/active/print')
                     )
                     ->read();
 
                 foreach ($routerActiveUsers as $activeUser) {
-                    $username =
-                        $activeUser['user']
-                        ?? null;
+                    $username = $activeUser['user'] ?? null;
 
                     if (! $username) {
                         continue;
                     }
 
-                    $key =
-                        $router->id
-                        . '|'
-                        . strtolower($username);
+                    $key = $router->id . '|' . strtolower($username);
 
                     $activeUsers[$key] = [
-                        'router_id' =>
-                            $router->id,
-
-                        'username' =>
-                            $username,
-
-                        'ip' =>
-                            $activeUser['address']
-                            ?? null,
-
-                        'mac' =>
-                            $activeUser['mac-address']
-                            ?? null,
-
-                        'uptime' =>
-                            $activeUser['uptime']
-                            ?? null,
-
-                        'bytes_in' =>
-                            (int) (
-                                $activeUser['bytes-in']
-                                ?? 0
-                            ),
-
-                        'bytes_out' =>
-                            (int) (
-                                $activeUser['bytes-out']
-                                ?? 0
-                            ),
-
-                        'packets_in' =>
-                            (int) (
-                                $activeUser['packets-in']
-                                ?? 0
-                            ),
-
-                        'packets_out' =>
-                            (int) (
-                                $activeUser['packets-out']
-                                ?? 0
-                            ),
+                        'router_id' => $router->id,
+                        'username' => $username,
+                        'ip' => $activeUser['address'] ?? null,
+                        'mac' => $activeUser['mac-address'] ?? null,
+                        'uptime' => $activeUser['uptime'] ?? null,
+                        'bytes_in' => (int) ($activeUser['bytes-in'] ?? 0),
+                        'bytes_out' => (int) ($activeUser['bytes-out'] ?? 0),
+                        'packets_in' => (int) ($activeUser['packets-in'] ?? 0),
+                        'packets_out' => (int) ($activeUser['packets-out'] ?? 0),
                     ];
                 }
-
             } catch (\Throwable $e) {
                 $routerErrors[] =
                     ($router->name ?? 'Router')
@@ -143,45 +100,95 @@ class HotspotVoucherController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | ATTACH LIVE DATA + SAVE TO DATABASE
+        | ATTACH LIVE DATA + SAVE REAL DATABASE FIELDS
         |--------------------------------------------------------------------------
         */
 
-        $allVouchers->each(
-            function ($voucher) use ($activeUsers) {
+        $allVouchers->each(function ($voucher) use ($activeUsers) {
 
-                $key =
-                    $voucher->network_router_id
-                    . '|'
-                    . strtolower(
-                        $voucher->username
-                    );
+            $key =
+                $voucher->network_router_id
+                . '|'
+                . strtolower($voucher->username);
 
-                $active =
-                    $activeUsers[$key]
-                    ?? null;
+            $active = $activeUsers[$key] ?? null;
+
+            $storedBytes =
+                (int) ($voucher->bytes_in ?? 0)
+                +
+                (int) ($voucher->bytes_out ?? 0);
+
+            /*
+            |--------------------------------------------------------------------------
+            | CHECK CURRENT EXPIRY
+            |--------------------------------------------------------------------------
+            */
+
+            $expiredByTime =
+                $voucher->expires_at
+                && $voucher->expires_at->lte(now());
+
+            /*
+            |--------------------------------------------------------------------------
+            | EXPIRED BY TIME
+            |--------------------------------------------------------------------------
+            |
+            | If time has already expired, we can immediately treat the voucher
+            | as expired in the UI. Actual MikroTik cleanup remains handled by
+            | Sync Status.
+            |
+            */
+
+            if (
+                $expiredByTime
+                && ! in_array(
+                    $voucher->status,
+                    ['expired', 'cancelled', 'disabled'],
+                    true
+                )
+            ) {
+                $voucher->status = 'expired';
+                $voucher->disabled_at =
+                    $voucher->disabled_at ?? now();
+
+                $voucher->save();
 
                 $storedBytes =
-                    (int) (
-                        $voucher->bytes_in
-                        ?? 0
-                    )
+                    (int) ($voucher->bytes_in ?? 0)
                     +
-                    (int) (
-                        $voucher->bytes_out
-                        ?? 0
-                    );
+                    (int) ($voucher->bytes_out ?? 0);
+            }
 
+            /*
+            |--------------------------------------------------------------------------
+            | TERMINAL / EXPIRED VOUCHERS
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                in_array(
+                    $voucher->status,
+                    ['expired', 'cancelled', 'disabled'],
+                    true
+                )
+                || $expiredByTime
+            ) {
                 /*
                 |--------------------------------------------------------------------------
-                | CURRENT EXPIRY STATE
+                | UI-ONLY ATTRIBUTES
                 |--------------------------------------------------------------------------
+                |
+                | IMPORTANT:
+                | These are deliberately added AFTER all DB saves.
+                | Do NOT call $voucher->save() after these attributes.
+                |
                 */
 
-                $expiredByTime =
-                    $voucher->expires_at
-                    &&
-                    $voucher->expires_at->lte(now());
+                $voucher->setAttribute('is_online', false);
+                $voucher->setAttribute('online_ip', null);
+                $voucher->setAttribute('online_mac', null);
+                $voucher->setAttribute('online_uptime', null);
+                $voucher->setAttribute('display_bytes', $storedBytes);
 
                 $voucher->setAttribute(
                     'is_expired_now',
@@ -189,278 +196,190 @@ class HotspotVoucherController extends Controller
                     || $expiredByTime
                 );
 
+                return;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NOT CURRENTLY ONLINE
+            |--------------------------------------------------------------------------
+            */
+
+            if (! $active) {
                 /*
                 |--------------------------------------------------------------------------
-                | NOT CURRENTLY ONLINE
+                | UI-ONLY ATTRIBUTES
                 |--------------------------------------------------------------------------
                 */
 
-                if (! $active) {
-                    $voucher->setAttribute(
-                        'is_online',
-                        false
-                    );
+                $voucher->setAttribute('is_online', false);
+                $voucher->setAttribute('online_ip', null);
+                $voucher->setAttribute('online_mac', null);
+                $voucher->setAttribute('online_uptime', null);
+                $voucher->setAttribute('display_bytes', $storedBytes);
+                $voucher->setAttribute('is_expired_now', false);
 
-                    $voucher->setAttribute(
-                        'online_ip',
-                        null
-                    );
+                return;
+            }
 
-                    $voucher->setAttribute(
-                        'online_mac',
-                        null
-                    );
+            /*
+            |--------------------------------------------------------------------------
+            | ACTIVE USER - UPDATE DATABASE FIELDS FIRST
+            |--------------------------------------------------------------------------
+            */
 
-                    $voucher->setAttribute(
-                        'online_uptime',
-                        null
-                    );
+            /*
+            |--------------------------------------------------------------------------
+            | FIRST LOGIN
+            |--------------------------------------------------------------------------
+            */
 
-                    $voucher->setAttribute(
-                        'display_bytes',
-                        $storedBytes
-                    );
-
-                    return;
-                }
+            if (! $voucher->first_login_at) {
+                $voucher->first_login_at = now();
+                $voucher->used_at = $voucher->first_login_at;
 
                 /*
                 |--------------------------------------------------------------------------
-                | TERMINAL / EXPIRED STATUS MUST NOT SHOW ONLINE
+                | CALCULATE EXPIRY FROM PROFILE
                 |--------------------------------------------------------------------------
                 */
 
                 if (
-                    in_array(
-                        $voucher->status,
-                        [
-                            'expired',
-                            'cancelled',
-                            'disabled',
-                        ],
-                        true
-                    )
-                    ||
-                    $expiredByTime
+                    $voucher->profile
+                    &&
+                    $voucher->profile->validity_value
+                    &&
+                    $voucher->profile->validity_unit
                 ) {
-                    $voucher->setAttribute(
-                        'is_online',
-                        false
-                    );
-
-                    $voucher->setAttribute(
-                        'display_bytes',
-                        $storedBytes
-                    );
-
-                    return;
+                    $voucher->expires_at =
+                        $this->calculateExpiry(
+                            $voucher->first_login_at->copy(),
+                            (int) $voucher->profile->validity_value,
+                            $voucher->profile->validity_unit
+                        );
                 }
-
-                /*
-                |--------------------------------------------------------------------------
-                | FIRST LOGIN
-                |--------------------------------------------------------------------------
-                */
-
-                if (! $voucher->first_login_at) {
-                    $voucher->first_login_at =
-                        now();
-
-                    $voucher->used_at =
-                        $voucher->first_login_at;
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | CALCULATE EXPIRY FROM PROFILE
-                    |--------------------------------------------------------------------------
-                    */
-
-                    if (
-                        $voucher->profile
-                        &&
-                        $voucher->profile->validity_value
-                        &&
-                        $voucher->profile->validity_unit
-                    ) {
-                        $voucher->expires_at =
-                            $this->calculateExpiry(
-                                $voucher
-                                    ->first_login_at
-                                    ->copy(),
-
-                                (int)
-                                    $voucher
-                                        ->profile
-                                        ->validity_value,
-
-                                $voucher
-                                    ->profile
-                                    ->validity_unit
-                            );
-                    }
-                }
-
-                /*
-                |--------------------------------------------------------------------------
-                | USED AT
-                |--------------------------------------------------------------------------
-                */
-
-                if (! $voucher->used_at) {
-                    $voucher->used_at =
-                        $voucher->first_login_at
-                        ?? now();
-                }
-
-                /*
-                |--------------------------------------------------------------------------
-                | STATUS
-                |--------------------------------------------------------------------------
-                */
-
-                $voucher->status = 'used';
-
-                /*
-                |--------------------------------------------------------------------------
-                | DEVICE INFORMATION
-                |--------------------------------------------------------------------------
-                */
-
-                $voucher->last_seen_at =
-                    now();
-
-                $voucher->used_by_ip =
-                    $active['ip']
-                    ?? $voucher->used_by_ip;
-
-                $voucher->used_by_mac =
-                    $active['mac']
-                    ?? $voucher->used_by_mac;
-
-                $voucher->mikrotik_uptime =
-                    $active['uptime']
-                    ?? $voucher->mikrotik_uptime;
-
-                /*
-                |--------------------------------------------------------------------------
-                | USAGE
-                |--------------------------------------------------------------------------
-                */
-
-                $voucher->bytes_in =
-                    max(
-                        (int) (
-                            $voucher->bytes_in
-                            ?? 0
-                        ),
-
-                        (int)
-                            $active['bytes_in']
-                    );
-
-                $voucher->bytes_out =
-                    max(
-                        (int) (
-                            $voucher->bytes_out
-                            ?? 0
-                        ),
-
-                        (int)
-                            $active['bytes_out']
-                    );
-
-                $voucher->packets_in =
-                    max(
-                        (int) (
-                            $voucher->packets_in
-                            ?? 0
-                        ),
-
-                        (int)
-                            $active['packets_in']
-                    );
-
-                $voucher->packets_out =
-                    max(
-                        (int) (
-                            $voucher->packets_out
-                            ?? 0
-                        ),
-
-                        (int)
-                            $active['packets_out']
-                    );
-
-                $voucher->last_synced_at =
-                    now();
-
-                /*
-                |--------------------------------------------------------------------------
-                | SAVE
-                |--------------------------------------------------------------------------
-                */
-
-                $voucher->save();
-
-                /*
-                |--------------------------------------------------------------------------
-                | LIVE UI ATTRIBUTES
-                |--------------------------------------------------------------------------
-                */
-
-                $activeBytes =
-                    (int)
-                        $active['bytes_in']
-                    +
-                    (int)
-                        $active['bytes_out'];
-
-                $savedBytes =
-                    (int) (
-                        $voucher->bytes_in
-                        ?? 0
-                    )
-                    +
-                    (int) (
-                        $voucher->bytes_out
-                        ?? 0
-                    );
-
-                $voucher->setAttribute(
-                    'is_online',
-                    true
-                );
-
-                $voucher->setAttribute(
-                    'online_ip',
-                    $active['ip']
-                );
-
-                $voucher->setAttribute(
-                    'online_mac',
-                    $active['mac']
-                );
-
-                $voucher->setAttribute(
-                    'online_uptime',
-                    $active['uptime']
-                );
-
-                $voucher->setAttribute(
-                    'display_bytes',
-                    max(
-                        $storedBytes,
-                        $activeBytes,
-                        $savedBytes
-                    )
-                );
-
-                $voucher->setAttribute(
-                    'is_expired_now',
-                    false
-                );
             }
-        );
+
+            /*
+            |--------------------------------------------------------------------------
+            | USED AT
+            |--------------------------------------------------------------------------
+            */
+
+            if (! $voucher->used_at) {
+                $voucher->used_at =
+                    $voucher->first_login_at ?? now();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | STATUS
+            |--------------------------------------------------------------------------
+            */
+
+            $voucher->status = 'used';
+
+            /*
+            |--------------------------------------------------------------------------
+            | DEVICE INFORMATION
+            |--------------------------------------------------------------------------
+            */
+
+            $voucher->last_seen_at = now();
+
+            $voucher->used_by_ip =
+                $active['ip']
+                ?? $voucher->used_by_ip;
+
+            $voucher->used_by_mac =
+                $active['mac']
+                ?? $voucher->used_by_mac;
+
+            $voucher->mikrotik_uptime =
+                $active['uptime']
+                ?? $voucher->mikrotik_uptime;
+
+            /*
+            |--------------------------------------------------------------------------
+            | USAGE
+            |--------------------------------------------------------------------------
+            */
+
+            $voucher->bytes_in = max(
+                (int) ($voucher->bytes_in ?? 0),
+                (int) $active['bytes_in']
+            );
+
+            $voucher->bytes_out = max(
+                (int) ($voucher->bytes_out ?? 0),
+                (int) $active['bytes_out']
+            );
+
+            $voucher->packets_in = max(
+                (int) ($voucher->packets_in ?? 0),
+                (int) $active['packets_in']
+            );
+
+            $voucher->packets_out = max(
+                (int) ($voucher->packets_out ?? 0),
+                (int) $active['packets_out']
+            );
+
+            $voucher->last_synced_at = now();
+
+            /*
+            |--------------------------------------------------------------------------
+            | SAVE REAL DATABASE FIELDS
+            |--------------------------------------------------------------------------
+            |
+            | This MUST happen before adding temporary UI attributes.
+            |
+            */
+
+            $voucher->save();
+
+            /*
+            |--------------------------------------------------------------------------
+            | CALCULATE LIVE USAGE
+            |--------------------------------------------------------------------------
+            */
+
+            $activeBytes =
+                (int) $active['bytes_in']
+                +
+                (int) $active['bytes_out'];
+
+            $savedBytes =
+                (int) ($voucher->bytes_in ?? 0)
+                +
+                (int) ($voucher->bytes_out ?? 0);
+
+            /*
+            |--------------------------------------------------------------------------
+            | UI-ONLY ATTRIBUTES
+            |--------------------------------------------------------------------------
+            |
+            | IMPORTANT:
+            | Never call $voucher->save() after this point.
+            |
+            */
+
+            $voucher->setAttribute('is_online', true);
+            $voucher->setAttribute('online_ip', $active['ip']);
+            $voucher->setAttribute('online_mac', $active['mac']);
+            $voucher->setAttribute('online_uptime', $active['uptime']);
+
+            $voucher->setAttribute(
+                'display_bytes',
+                max(
+                    $storedBytes,
+                    $activeBytes,
+                    $savedBytes
+                )
+            );
+
+            $voucher->setAttribute('is_expired_now', false);
+        });
 
         /*
         |--------------------------------------------------------------------------
@@ -468,12 +387,20 @@ class HotspotVoucherController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        /*
+        |--------------------------------------------------------------------------
+        | ONLINE
+        |--------------------------------------------------------------------------
+        */
+
         $onlineCount =
             $allVouchers
-                ->where(
-                    'is_online',
-                    true
-                )
+                ->filter(function ($voucher) {
+                    return
+                        (bool) ($voucher->is_online ?? false)
+                        &&
+                        ! (bool) ($voucher->is_expired_now ?? false);
+                })
                 ->count();
 
         /*
@@ -488,9 +415,9 @@ class HotspotVoucherController extends Controller
                     return
                         $voucher->status === 'used'
                         &&
-                        ! $voucher->is_online
+                        ! (bool) ($voucher->is_online ?? false)
                         &&
-                        ! $voucher->is_expired_now;
+                        ! (bool) ($voucher->is_expired_now ?? false);
                 })
                 ->count();
 
@@ -506,7 +433,7 @@ class HotspotVoucherController extends Controller
                     return
                         $voucher->status === 'unused'
                         &&
-                        ! $voucher->is_expired_now;
+                        ! (bool) ($voucher->is_expired_now ?? false);
                 })
                 ->count();
 
@@ -518,10 +445,10 @@ class HotspotVoucherController extends Controller
 
         $expiredCount =
             $allVouchers
-                ->where(
-                    'is_expired_now',
-                    true
-                )
+                ->filter(function ($voucher) {
+                    return
+                        (bool) ($voucher->is_expired_now ?? false);
+                })
                 ->count();
 
         /*
@@ -532,10 +459,7 @@ class HotspotVoucherController extends Controller
 
         $cancelledCount =
             $allVouchers
-                ->where(
-                    'status',
-                    'cancelled'
-                )
+                ->where('status', 'cancelled')
                 ->count();
 
         /*
@@ -544,12 +468,11 @@ class HotspotVoucherController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $allCount =
-            $allVouchers->count();
+        $allCount = $allVouchers->count();
 
         /*
         |--------------------------------------------------------------------------
-        | FILTER TAB
+        | FILTER CURRENT TAB
         |--------------------------------------------------------------------------
         */
 
@@ -557,13 +480,15 @@ class HotspotVoucherController extends Controller
 
             $vouchers =
                 $allVouchers
-                    ->where(
-                        'is_online',
-                        true
-                    )
-                    ->sortByDesc(
-                        'display_bytes'
-                    )
+                    ->filter(function ($voucher) {
+                        return
+                            (bool) ($voucher->is_online ?? false)
+                            &&
+                            ! (bool) ($voucher->is_expired_now ?? false);
+                    })
+                    ->sortByDesc(function ($voucher) {
+                        return (int) ($voucher->display_bytes ?? 0);
+                    })
                     ->values();
 
         } elseif ($tab === 'offline') {
@@ -574,17 +499,15 @@ class HotspotVoucherController extends Controller
                         return
                             $voucher->status === 'used'
                             &&
-                            ! $voucher->is_online
+                            ! (bool) ($voucher->is_online ?? false)
                             &&
-                            ! $voucher->is_expired_now;
+                            ! (bool) ($voucher->is_expired_now ?? false);
                     })
-                    ->sortByDesc(
-                        function ($voucher) {
-                            return optional(
-                                $voucher->last_seen_at
-                            )->timestamp ?? 0;
-                        }
-                    )
+                    ->sortByDesc(function ($voucher) {
+                        return optional(
+                            $voucher->last_seen_at
+                        )->timestamp ?? 0;
+                    })
                     ->values();
 
         } elseif ($tab === 'unused') {
@@ -595,63 +518,52 @@ class HotspotVoucherController extends Controller
                         return
                             $voucher->status === 'unused'
                             &&
-                            ! $voucher->is_expired_now;
+                            ! (bool) ($voucher->is_expired_now ?? false);
                     })
-                    ->sortByDesc(
-                        function ($voucher) {
-                            return optional(
-                                $voucher->generated_at
-                                ?? $voucher->created_at
-                            )->timestamp ?? 0;
-                        }
-                    )
+                    ->sortByDesc(function ($voucher) {
+                        return optional(
+                            $voucher->generated_at
+                            ?? $voucher->created_at
+                        )->timestamp ?? 0;
+                    })
                     ->values();
 
         } elseif ($tab === 'expired') {
 
             $vouchers =
                 $allVouchers
-                    ->where(
-                        'is_expired_now',
-                        true
-                    )
-                    ->sortByDesc(
-                        function ($voucher) {
-                            return optional(
-                                $voucher->expires_at
-                            )->timestamp ?? 0;
-                        }
-                    )
+                    ->filter(function ($voucher) {
+                        return
+                            (bool) ($voucher->is_expired_now ?? false);
+                    })
+                    ->sortByDesc(function ($voucher) {
+                        return optional(
+                            $voucher->expires_at
+                        )->timestamp ?? 0;
+                    })
                     ->values();
 
         } elseif ($tab === 'cancelled') {
 
             $vouchers =
                 $allVouchers
-                    ->where(
-                        'status',
-                        'cancelled'
-                    )
-                    ->sortByDesc(
-                        function ($voucher) {
-                            return optional(
-                                $voucher->disabled_at
-                            )->timestamp ?? 0;
-                        }
-                    )
+                    ->where('status', 'cancelled')
+                    ->sortByDesc(function ($voucher) {
+                        return optional(
+                            $voucher->disabled_at
+                        )->timestamp ?? 0;
+                    })
                     ->values();
 
         } else {
 
             $vouchers =
                 $allVouchers
-                    ->sortByDesc(
-                        function ($voucher) {
-                            return optional(
-                                $voucher->created_at
-                            )->timestamp ?? 0;
-                        }
-                    )
+                    ->sortByDesc(function ($voucher) {
+                        return optional(
+                            $voucher->created_at
+                        )->timestamp ?? 0;
+                    })
                     ->values();
         }
 
@@ -664,32 +576,15 @@ class HotspotVoucherController extends Controller
         return view(
             'network.vouchers.index',
             [
-                'vouchers' =>
-                    $vouchers,
-
-                'tab' =>
-                    $tab,
-
-                'onlineCount' =>
-                    $onlineCount,
-
-                'offlineCount' =>
-                    $offlineCount,
-
-                'unusedCount' =>
-                    $unusedCount,
-
-                'expiredCount' =>
-                    $expiredCount,
-
-                'cancelledCount' =>
-                    $cancelledCount,
-
-                'allCount' =>
-                    $allCount,
-
-                'routerErrors' =>
-                    $routerErrors,
+                'vouchers' => $vouchers,
+                'tab' => $tab,
+                'onlineCount' => $onlineCount,
+                'offlineCount' => $offlineCount,
+                'unusedCount' => $unusedCount,
+                'expiredCount' => $expiredCount,
+                'cancelledCount' => $cancelledCount,
+                'allCount' => $allCount,
+                'routerErrors' => $routerErrors,
             ]
         );
     }
@@ -708,10 +603,7 @@ class HotspotVoucherController extends Controller
                 'profile',
                 'generator',
             ])
-                ->where(
-                    'source',
-                    'mikrotik'
-                )
+                ->where('source', 'mikrotik')
                 ->latest()
                 ->get();
 
@@ -739,8 +631,7 @@ class HotspotVoucherController extends Controller
         return view(
             'network.vouchers.show',
             [
-                'voucher' =>
-                    $hotspotVoucher,
+                'voucher' => $hotspotVoucher,
             ]
         );
     }
@@ -754,16 +645,9 @@ class HotspotVoucherController extends Controller
     public function create()
     {
         $profiles =
-            HotspotProfile::with(
-                'router'
-            )
-                ->where(
-                    'enabled',
-                    true
-                )
-                ->orderBy(
-                    'price'
-                )
+            HotspotProfile::with('router')
+                ->where('enabled', true)
+                ->orderBy('price')
                 ->get();
 
         return view(
@@ -778,9 +662,8 @@ class HotspotVoucherController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function store(
-        Request $request
-    ) {
+    public function store(Request $request)
+    {
         $data =
             $request->validate([
                 'hotspot_profile_id' =>
@@ -791,13 +674,9 @@ class HotspotVoucherController extends Controller
             ]);
 
         $profile =
-            HotspotProfile::with(
-                'router'
-            )
+            HotspotProfile::with('router')
                 ->findOrFail(
-                    $data[
-                        'hotspot_profile_id'
-                    ]
+                    $data['hotspot_profile_id']
                 );
 
         if (! $profile->enabled) {
@@ -809,8 +688,7 @@ class HotspotVoucherController extends Controller
                 );
         }
 
-        $router =
-            $profile->router;
+        $router = $profile->router;
 
         if (
             ! $router
@@ -828,40 +706,24 @@ class HotspotVoucherController extends Controller
         try {
             $username =
                 $this->generateVoucherCode(
-                    $profile->voucher_prefix
-                    ?: 'JDK'
+                    $profile->voucher_prefix ?: 'JDK'
                 );
 
-            $password =
-                $username;
+            $password = $username;
 
             $client =
-                $this->routerClient(
-                    $router
-                );
+                $this->routerClient($router);
 
             $query =
-                (new Query(
-                    '/ip/hotspot/user/add'
-                ))
-                    ->equal(
-                        'name',
-                        $username
-                    )
-                    ->equal(
-                        'password',
-                        $password
-                    )
+                (new Query('/ip/hotspot/user/add'))
+                    ->equal('name', $username)
+                    ->equal('password', $password)
                     ->equal(
                         'profile',
                         $profile->mikrotik_profile
                     );
 
-            if (
-                ! empty(
-                    $data['comment']
-                )
-            ) {
+            if (! empty($data['comment'])) {
                 $query->equal(
                     'comment',
                     $data['comment']
@@ -898,14 +760,11 @@ class HotspotVoucherController extends Controller
                     auth()->id(),
 
                 'comment' =>
-                    $data['comment']
-                    ?? null,
+                    $data['comment'] ?? null,
             ]);
 
             return redirect()
-                ->route(
-                    'hotspot-vouchers.index'
-                )
+                ->route('hotspot-vouchers.index')
                 ->with(
                     'success',
                     'Voucher generated successfully: '
@@ -945,9 +804,7 @@ class HotspotVoucherController extends Controller
             foreach ($routers as $router) {
 
                 $client =
-                    $this->routerClient(
-                        $router
-                    );
+                    $this->routerClient($router);
 
                 /*
                 |--------------------------------------------------------------------------
@@ -964,10 +821,8 @@ class HotspotVoucherController extends Controller
                         )
                         ->read();
 
-                foreach (
-                    $activeUsers
-                    as $activeUser
-                ) {
+                foreach ($activeUsers as $activeUser) {
+
                     $username =
                         $activeUser['user']
                         ?? null;
@@ -977,9 +832,7 @@ class HotspotVoucherController extends Controller
                     }
 
                     $voucher =
-                        HotspotVoucher::with(
-                            'profile'
-                        )
+                        HotspotVoucher::with('profile')
                             ->where(
                                 'network_router_id',
                                 $router->id
@@ -1015,6 +868,7 @@ class HotspotVoucherController extends Controller
                     */
 
                     if (! $voucher->first_login_at) {
+
                         $voucher->first_login_at =
                             now();
 
@@ -1024,13 +878,9 @@ class HotspotVoucherController extends Controller
                         if (
                             $voucher->profile
                             &&
-                            $voucher
-                                ->profile
-                                ->validity_value
+                            $voucher->profile->validity_value
                             &&
-                            $voucher
-                                ->profile
-                                ->validity_unit
+                            $voucher->profile->validity_unit
                         ) {
                             $voucher->expires_at =
                                 $this->calculateExpiry(
@@ -1062,11 +912,9 @@ class HotspotVoucherController extends Controller
                     |--------------------------------------------------------------------------
                     */
 
-                    $voucher->status =
-                        'used';
+                    $voucher->status = 'used';
 
-                    $voucher->last_seen_at =
-                        now();
+                    $voucher->last_seen_at = now();
 
                     /*
                     |--------------------------------------------------------------------------
@@ -1092,35 +940,25 @@ class HotspotVoucherController extends Controller
                     |--------------------------------------------------------------------------
                     */
 
-                    if (
-                        isset(
-                            $activeUser['bytes-in']
-                        )
-                    ) {
+                    if (isset($activeUser['bytes-in'])) {
                         $voucher->bytes_in =
                             max(
                                 (int) (
                                     $voucher->bytes_in
                                     ?? 0
                                 ),
-
                                 (int)
                                     $activeUser['bytes-in']
                             );
                     }
 
-                    if (
-                        isset(
-                            $activeUser['bytes-out']
-                        )
-                    ) {
+                    if (isset($activeUser['bytes-out'])) {
                         $voucher->bytes_out =
                             max(
                                 (int) (
                                     $voucher->bytes_out
                                     ?? 0
                                 ),
-
                                 (int)
                                     $activeUser['bytes-out']
                             );
@@ -1132,35 +970,25 @@ class HotspotVoucherController extends Controller
                     |--------------------------------------------------------------------------
                     */
 
-                    if (
-                        isset(
-                            $activeUser['packets-in']
-                        )
-                    ) {
+                    if (isset($activeUser['packets-in'])) {
                         $voucher->packets_in =
                             max(
                                 (int) (
                                     $voucher->packets_in
                                     ?? 0
                                 ),
-
                                 (int)
                                     $activeUser['packets-in']
                             );
                     }
 
-                    if (
-                        isset(
-                            $activeUser['packets-out']
-                        )
-                    ) {
+                    if (isset($activeUser['packets-out'])) {
                         $voucher->packets_out =
                             max(
                                 (int) (
                                     $voucher->packets_out
                                     ?? 0
                                 ),
-
                                 (int)
                                     $activeUser['packets-out']
                             );
@@ -1199,10 +1027,8 @@ class HotspotVoucherController extends Controller
                         )
                         ->get();
 
-                foreach (
-                    $expiredVouchers
-                    as $voucher
-                ) {
+                foreach ($expiredVouchers as $voucher) {
+
                     $this
                         ->removeVoucherFromMikrotik(
                             $client,
@@ -1471,8 +1297,7 @@ class HotspotVoucherController extends Controller
         */
 
         $schedulerName =
-            'expire-'
-            . $username;
+            'expire-' . $username;
 
         $schedulers =
             $client
@@ -1528,12 +1353,10 @@ class HotspotVoucherController extends Controller
                 ),
 
             'port' =>
-                (int)
-                    $router->api_port,
+                (int) $router->api_port,
 
             'ssl' =>
-                (bool)
-                    $router->use_ssl,
+                (bool) $router->use_ssl,
 
             'timeout' =>
                 5,
@@ -1551,9 +1374,7 @@ class HotspotVoucherController extends Controller
     ): string {
         do {
             $code =
-                strtoupper(
-                    $prefix
-                )
+                strtoupper($prefix)
                 . random_int(
                     10000,
                     99999
@@ -1582,29 +1403,19 @@ class HotspotVoucherController extends Controller
     ) {
         return match ($unit) {
             'minutes' =>
-                $start->addMinutes(
-                    $value
-                ),
+                $start->addMinutes($value),
 
             'hours' =>
-                $start->addHours(
-                    $value
-                ),
+                $start->addHours($value),
 
             'days' =>
-                $start->addDays(
-                    $value
-                ),
+                $start->addDays($value),
 
             'weeks' =>
-                $start->addWeeks(
-                    $value
-                ),
+                $start->addWeeks($value),
 
             'months' =>
-                $start->addMonths(
-                    $value
-                ),
+                $start->addMonths($value),
 
             default =>
                 $start,
