@@ -42,6 +42,21 @@ use App\Http\Controllers\DailyCashEntryController;
 
 /*
 |--------------------------------------------------------------------------
+| BAGAMBAKAMO CONTROLLERS
+|--------------------------------------------------------------------------
+*/
+
+use App\Http\Controllers\Bagambakamo\AdminController as BagambakamoAdminController;
+use App\Http\Controllers\Bagambakamo\MemberController as BagambakamoMemberController;
+use App\Http\Controllers\Bagambakamo\PaymentController as BagambakamoPaymentController;
+use App\Http\Controllers\Bagambakamo\EventController as BagambakamoEventController;
+use App\Http\Controllers\Bagambakamo\ReportController as BagambakamoReportController;
+use App\Http\Controllers\Bagambakamo\SmsController as BagambakamoSmsController;
+use App\Http\Controllers\Bagambakamo\SmsReportController as BagambakamoSmsReportController;
+
+
+/*
+|--------------------------------------------------------------------------
 | WEB ROUTES
 |--------------------------------------------------------------------------
 */
@@ -51,6 +66,7 @@ Route::get('/', function () {
     return view('auth.login');
 
 })->name('home');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -63,10 +79,35 @@ Route::get('/', function () {
 |
 */
 
+/*
+|--------------------------------------------------------------------------
+| PHP / GD TEST - TEMPORARY
+|--------------------------------------------------------------------------
+|
+| Temporary route used to confirm that the PHP process serving Laravel
+| has loaded the GD extension required by DomPDF.
+|
+*/
+
+Route::get('/gd-test', function () {
+
+    return response()->json([
+        'php_version' => PHP_VERSION,
+        'php_binary' => PHP_BINARY,
+        'php_ini' => php_ini_loaded_file(),
+        'gd_loaded' => extension_loaded('gd'),
+        'gd_info' => extension_loaded('gd')
+            ? gd_info()
+            : null,
+    ]);
+
+})->name('gd.test');
+
 Route::get('/wifi', [
     WifiPortalController::class,
     'index'
 ])->name('wifi.portal');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -85,6 +126,7 @@ Route::middleware([
         'index'
     ])->name('dashboard');
 });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -110,6 +152,7 @@ Route::middleware('auth')->group(function () {
     ])->name('profile.destroy');
 });
 
+
 /*
 |--------------------------------------------------------------------------
 | ROLE TEST ROUTES
@@ -124,6 +167,7 @@ Route::middleware(['auth', 'role:manager'])
 
 Route::middleware(['auth', 'role:employee'])
     ->get('/employee', fn () => 'Employee Only');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -147,6 +191,7 @@ Route::middleware([
         BusinessController::class
     );
 
+
     /*
     |--------------------------------------------------------------------------
     | PRODUCTS
@@ -157,6 +202,7 @@ Route::middleware([
         'products',
         ProductController::class
     );
+
 
     /*
     |--------------------------------------------------------------------------
@@ -169,6 +215,7 @@ Route::middleware([
         StockController::class
     );
 
+
     /*
     |--------------------------------------------------------------------------
     | PURCHASES
@@ -180,6 +227,7 @@ Route::middleware([
         PurchaseController::class
     );
 
+
     /*
     |--------------------------------------------------------------------------
     | LIVESTOCKS
@@ -190,6 +238,7 @@ Route::middleware([
         'livestocks',
         LivestockController::class
     );
+
 
     /*
     |--------------------------------------------------------------------------
@@ -207,6 +256,7 @@ Route::middleware([
         'store'
     ])->name('livestock-logs.store');
 
+
     /*
     |--------------------------------------------------------------------------
     | STOCK AJAX DATA
@@ -217,6 +267,7 @@ Route::middleware([
         StockController::class,
         'getStockData'
     ])->name('stocks.data');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -234,6 +285,7 @@ Route::middleware([
         'monthly'
     ])->name('reports.monthly');
 
+
     /*
     |--------------------------------------------------------------------------
     | USERS
@@ -244,6 +296,7 @@ Route::middleware([
         'users',
         UserController::class
     );
+
 
     /*
     |--------------------------------------------------------------------------
@@ -256,6 +309,7 @@ Route::middleware([
         ExpenseController::class
     );
 
+
     /*
     |--------------------------------------------------------------------------
     | FIXED EXPENSES
@@ -266,6 +320,7 @@ Route::middleware([
         'fixed-expenses',
         FixedExpenseController::class
     );
+
 
     /*
     |--------------------------------------------------------------------------
@@ -283,6 +338,7 @@ Route::middleware([
         'pay'
     ])->name('fixed-expense-payments.pay');
 
+
     /*
     |--------------------------------------------------------------------------
     | COMPANY INCOMES
@@ -293,6 +349,7 @@ Route::middleware([
         'company-incomes',
         IncomeController::class
     );
+
 
     /*
     |--------------------------------------------------------------------------
@@ -315,6 +372,7 @@ Route::middleware([
         [NetworkRouterController::class, 'syncProfiles']
     )->name('network-routers.sync-profiles');
 
+
     /*
     |--------------------------------------------------------------------------
     | HOTSPOT PROFILES
@@ -335,6 +393,7 @@ Route::middleware([
         '/hotspot-profiles/{hotspotProfile}',
         [HotspotProfileController::class, 'update']
     )->name('hotspot-profiles.update');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -377,6 +436,122 @@ Route::middleware([
         [HotspotVoucherController::class, 'cancel']
     )->name('hotspot-vouchers.cancel');
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | BAGAMBAKAMO
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('bagambakamo')
+        ->name('bagambakamo.')
+        ->group(function () {
+
+            /*
+            |--------------------------------------------------------------------------
+            | BAGAMBAKAMO DASHBOARD
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('/', [
+                BagambakamoAdminController::class,
+                'index'
+            ])->name('dashboard');
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | BAGAMBAKAMO MEMBERS
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('/members', [
+                BagambakamoMemberController::class,
+                'index'
+            ])->name('members.index');
+
+            Route::post('/members', [
+                BagambakamoMemberController::class,
+                'store'
+            ])->name('members.store');
+
+            Route::get('/members/{member}', [
+                BagambakamoMemberController::class,
+                'show'
+            ])->name('members.show');
+
+            Route::delete('/members/{member}', [
+                BagambakamoMemberController::class,
+                'destroy'
+            ])->name('members.destroy');
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | BAGAMBAKAMO PAYMENTS
+            |--------------------------------------------------------------------------
+            */
+
+            Route::post('/payments', [
+                BagambakamoPaymentController::class,
+                'store'
+            ])->name('payments.store');
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | BAGAMBAKAMO EVENTS
+            |--------------------------------------------------------------------------
+            */
+
+            Route::post('/events', [
+                BagambakamoEventController::class,
+                'store'
+            ])->name('events.store');
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | BAGAMBAKAMO REPORTS
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('/reports', [
+                BagambakamoReportController::class,
+                'index'
+            ])->name('reports.index');
+
+            Route::get('/report/pdf', [
+                BagambakamoReportController::class,
+                'downloadPDF'
+            ])->name('report.pdf');
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | BAGAMBAKAMO SMS REPORTS
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('/sms-reports', [
+                BagambakamoSmsReportController::class,
+                'index'
+            ])->name('sms.reports');
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | BAGAMBAKAMO SMS DEBTORS
+            |--------------------------------------------------------------------------
+            */
+
+            Route::post('/sms/debtors', [
+                BagambakamoSmsController::class,
+                'sendToDebtors'
+            ])->name('sms.debtors');
+        });
+
+
     /*
     |--------------------------------------------------------------------------
     | SAVINGS
@@ -387,6 +562,7 @@ Route::middleware([
         'savings',
         SavingController::class
     );
+
 
     /*
     |--------------------------------------------------------------------------
@@ -408,6 +584,7 @@ Route::middleware([
 
     ])->name('savings.deposit.store');
 
+
     /*
     |--------------------------------------------------------------------------
     | SAVING WITHDRAWALS
@@ -428,6 +605,7 @@ Route::middleware([
 
     ])->name('savings.withdraw.store');
 
+
     /*
     |--------------------------------------------------------------------------
     | LOANS
@@ -438,6 +616,7 @@ Route::middleware([
         'loans',
         LoanController::class
     );
+
 
     /*
     |--------------------------------------------------------------------------
@@ -455,6 +634,7 @@ Route::middleware([
         'destroy'
     ])->name('loan-payments.destroy');
 
+
     /*
     |--------------------------------------------------------------------------
     | TOILETS
@@ -465,6 +645,7 @@ Route::middleware([
         ToiletController::class,
         'index'
     ])->name('toilets.index');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -513,6 +694,7 @@ Route::middleware([
     })->name('database.tables');
 });
 
+
 /*
 |--------------------------------------------------------------------------
 | TOILET EMPLOYEE ROUTES
@@ -535,6 +717,7 @@ Route::middleware([
         'dashboard'
     ])->name('stendi.dashboard');
 
+
     /*
     |--------------------------------------------------------------------------
     | SOKONI DASHBOARD
@@ -545,6 +728,7 @@ Route::middleware([
         ToiletAttendantController::class,
         'dashboard'
     ])->name('sokoni.dashboard');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -562,6 +746,7 @@ Route::middleware([
         'storeEntry'
     ])->name('stendi.entry.store');
 
+
     /*
     |--------------------------------------------------------------------------
     | SOKONI ADD ENTRY
@@ -578,6 +763,7 @@ Route::middleware([
         'storeEntry'
     ])->name('sokoni.entry.store');
 
+
     /*
     |--------------------------------------------------------------------------
     | STENDI EXPENSES
@@ -588,6 +774,7 @@ Route::middleware([
         ToiletAttendantController::class,
         'expenses'
     ])->name('stendi.expenses');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -600,6 +787,7 @@ Route::middleware([
         'expenses'
     ])->name('sokoni.expenses');
 
+
     /*
     |--------------------------------------------------------------------------
     | STORE TOILET EXPENSE
@@ -610,6 +798,7 @@ Route::middleware([
         ToiletAttendantController::class,
         'storeExpense'
     ])->name('expense.store');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -622,6 +811,7 @@ Route::middleware([
         'updateExpense'
     ])->name('expense.update');
 
+
     /*
     |--------------------------------------------------------------------------
     | DELETE TOILET EXPENSE
@@ -632,6 +822,7 @@ Route::middleware([
         ToiletAttendantController::class,
         'deleteExpense'
     ])->name('expense.delete');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -644,6 +835,7 @@ Route::middleware([
         'updateEntry'
     ])->name('entry.update');
 
+
     /*
     |--------------------------------------------------------------------------
     | STENDI REPORTS
@@ -655,6 +847,7 @@ Route::middleware([
         'reports'
     ])->name('stendi.reports');
 
+
     /*
     |--------------------------------------------------------------------------
     | SOKONI REPORTS
@@ -665,6 +858,7 @@ Route::middleware([
         ToiletAttendantController::class,
         'reports'
     ])->name('sokoni.reports');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -678,6 +872,7 @@ Route::middleware([
     ])->name('daily-entry.update');
 
 });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -706,6 +901,7 @@ Route::middleware([
     ])->name('daily-cash.store');
 
 });
+
 
 /*
 |--------------------------------------------------------------------------

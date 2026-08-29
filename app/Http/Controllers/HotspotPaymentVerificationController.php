@@ -20,12 +20,6 @@ class HotspotPaymentVerificationController extends Controller
                 'max:30',
             ],
 
-            'amount' => [
-                'required',
-                'numeric',
-                'min:1',
-            ],
-
             'mac' => [
                 'nullable',
                 'string',
@@ -39,9 +33,23 @@ class HotspotPaymentVerificationController extends Controller
             ],
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | NORMALIZE PHONE
+        |--------------------------------------------------------------------------
+        */
+
         $phone = $this->normalizePhone(
             $validated['payer_phone']
         );
+
+        if (! $phone) {
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Namba ya simu uliyoingiza si sahihi.',
+            ], 422);
+        }
 
         try {
             return DB::transaction(
@@ -52,50 +60,12 @@ class HotspotPaymentVerificationController extends Controller
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Find Unclaimed Completed Payment
+                    | FIND NEWEST UNCLAIMED COMPLETED PAYMENT
                     |--------------------------------------------------------------------------
                     */
 
-                    $payment = HotspotPayment::with([
-                        'profile',
-                        'voucher',
-                    ])
-                        ->where(
-                            'payer_phone',
-                            $phone
-                        )
-                        ->where(
-                            'amount',
-                            $validated['amount']
-                        )
-                        ->where(
-                            'status',
-                            'completed'
-                        )
-                        ->whereNull(
-                            'claimed_at'
-                        )
-                        ->orderByDesc(
-                            'paid_at'
-                        )
-                        ->lockForUpdate()
-                        ->first();
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | No Unclaimed Payment
-                    |--------------------------------------------------------------------------
-                    */
-
-                    if (! $payment) {
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Check Whether Same Phone Has A Claimed Payment On Same Device
-                        |--------------------------------------------------------------------------
-                        */
-
-                        $existing = HotspotPayment::with([
+                    $payment =
+                        HotspotPayment::with([
                             'profile',
                             'voucher',
                         ])
@@ -104,85 +74,195 @@ class HotspotPaymentVerificationController extends Controller
                                 $phone
                             )
                             ->where(
-                                'amount',
-                                $validated['amount']
-                            )
-                            ->where(
                                 'status',
                                 'completed'
                             )
                             ->whereNotNull(
+                                'voucher_id'
+                            )
+                            ->whereNull(
                                 'claimed_at'
                             )
                             ->orderByDesc(
-                                'claimed_at'
+                                'paid_at'
                             )
+                            ->orderByDesc(
+                                'id'
+                            )
+                            ->lockForUpdate()
                             ->first();
 
-                        if (
-                            $existing &&
-                            $existing->claimed_by_mac &&
-                            ! empty($validated['mac']) &&
-                            strcasecmp(
-                                $existing->claimed_by_mac,
-                                $validated['mac']
-                            ) === 0
-                        ) {
-                            return response()->json([
-                                'success' => true,
-                                'message' => 'Malipo tayari yamethibitishwa kwenye kifaa hiki.',
-                                'already_claimed' => true,
-                                'payment_id' => $existing->id,
-                                'payer_phone' => $existing->payer_phone,
-                                'amount' => $existing->amount,
-                                'reference' => $existing->reference,
-                                'hotspot_profile' => $existing->profile?->name,
-                                'voucher' => $existing->voucher?->username,
-                            ]);
-                        }
+                    /*
+                    |--------------------------------------------------------------------------
+                    | IF NO UNCLAIMED PAYMENT, CHECK SAME DEVICE'S PREVIOUS PAYMENT
+                    |--------------------------------------------------------------------------
+                    |
+                    | This allows the customer to enter the same phone number again
+                    | when reconnecting with the same device.
+                    |
+                    */
 
+                    if (
+                        ! $payment
+                        &&
+                        ! empty(
+                            $validated['mac']
+                        )
+                    ) {
+                        $payment =
+                            HotspotPayment::with([
+                                'profile',
+                                'voucher',
+                            ])
+                                ->where(
+                                    'payer_phone',
+                                    $phone
+                                )
+                                ->where(
+                                    'status',
+                                    'completed'
+                                )
+                                ->whereNotNull(
+                                    'voucher_id'
+                                )
+                                ->where(
+                                    'claimed_by_mac',
+                                    $validated['mac']
+                                )
+                                ->orderByDesc(
+                                    'paid_at'
+                                )
+                                ->orderByDesc(
+                                    'id'
+                                )
+                                ->first();
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | PAYMENT NOT FOUND
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (! $payment) {
                         return response()->json([
                             'success' => false,
-                            'message' => 'Malipo hayajapatikana. Hakikisha namba ya simu na kifurushi ni sahihi, au subiri sekunde chache kisha ujaribu tena.',
+
+                            'message' =>
+                                'Malipo hayajapatikana kwa namba hii. '
+                                . 'Hakikisha umetumia namba ileile iliyofanya malipo '
+                                . 'au subiri sekunde chache kisha ujaribu tena.',
                         ], 404);
                     }
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Voucher Check
+                    | VOUCHER MUST EXIST
                     |--------------------------------------------------------------------------
                     */
 
                     if (
-                        ! $payment->voucher_id ||
+                        ! $payment->voucher_id
+                        ||
                         ! $payment->voucher
                     ) {
                         return response()->json([
                             'success' => false,
-                            'message' => 'Malipo yamepatikana lakini voucher bado haijapatikana. Tafadhali jaribu tena baada ya muda mfupi.',
+
+                            'message' =>
+                                'Malipo yamepatikana lakini voucher bado haijawa tayari. '
+                                . 'Jaribu tena baada ya muda mfupi.',
                         ], 409);
                     }
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Claim Payment
+                    | ALREADY CLAIMED
                     |--------------------------------------------------------------------------
                     */
 
-                    $payment->claimed_at = now();
+                    if ($payment->claimed_at) {
+
+                        if (
+                            $payment->claimed_by_mac
+                            &&
+                            ! empty(
+                                $validated['mac']
+                            )
+                            &&
+                            strcasecmp(
+                                $payment->claimed_by_mac,
+                                $validated['mac']
+                            ) !== 0
+                        ) {
+                            return response()->json([
+                                'success' => false,
+
+                                'message' =>
+                                    'Malipo haya tayari yametumika kwenye kifaa kingine.',
+                            ], 409);
+                        }
+
+                        return response()->json([
+                            'success' => true,
+
+                            'message' =>
+                                'Malipo tayari yamethibitishwa.',
+
+                            'already_claimed' =>
+                                true,
+
+                            'payment_id' =>
+                                $payment->id,
+
+                            'payer_phone' =>
+                                $payment->payer_phone,
+
+                            'amount' =>
+                                $payment->amount,
+
+                            'reference' =>
+                                $payment->reference,
+
+                            'hotspot_profile' =>
+                                $payment
+                                    ->profile
+                                    ?->name,
+
+                            'voucher' =>
+                                $payment
+                                    ->voucher
+                                    ->username,
+                        ]);
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | CLAIM PAYMENT
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $payment->claimed_at =
+                        now();
 
                     $payment->claimed_by_mac =
-                        $validated['mac'] ?? null;
+                        $validated['mac']
+                        ?? null;
 
                     $payment->claimed_by_ip =
-                        $validated['ip'] ?? null;
+                        $validated['ip']
+                        ?? null;
 
                     $payment->save();
 
                     return response()->json([
                         'success' => true,
-                        'message' => 'Malipo yamethibitishwa kikamilifu.',
-                        'already_claimed' => false,
+
+                        'message' =>
+                            'Malipo yamethibitishwa kikamilifu.',
+
+                        'already_claimed' =>
+                            false,
 
                         'payment_id' =>
                             $payment->id,
@@ -197,10 +277,14 @@ class HotspotPaymentVerificationController extends Controller
                             $payment->reference,
 
                         'hotspot_profile' =>
-                            $payment->profile?->name,
+                            $payment
+                                ->profile
+                                ?->name,
 
                         'voucher' =>
-                            $payment->voucher->username,
+                            $payment
+                                ->voucher
+                                ->username,
                     ]);
                 }
             );
@@ -213,38 +297,85 @@ class HotspotPaymentVerificationController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Imeshindikana kuthibitisha malipo.',
+
+                'message' =>
+                    'Imeshindikana kuthibitisha malipo.',
             ], 500);
         }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALIZE TANZANIA PHONE NUMBER
+    |--------------------------------------------------------------------------
+    |
+    | 0659840000     -> 255659840000
+    | 659840000      -> 255659840000
+    | +255659840000  -> 255659840000
+    |
+    */
+
     private function normalizePhone(
         string $phone
-    ): string {
-        $phone = preg_replace(
-            '/\D+/',
-            '',
-            $phone
-        );
+    ): ?string {
+        $phone =
+            preg_replace(
+                '/\D+/',
+                '',
+                $phone
+            );
 
-        if (str_starts_with($phone, '255')) {
+        if (! $phone) {
+            return null;
+        }
+
+        if (
+            str_starts_with(
+                $phone,
+                '255'
+            )
+            &&
+            strlen($phone) === 12
+        ) {
             return $phone;
         }
 
         if (
-            str_starts_with($phone, '0') &&
+            str_starts_with(
+                $phone,
+                '0'
+            )
+            &&
             strlen($phone) === 10
         ) {
-            return '255' . substr(
-                $phone,
-                1
-            );
+            return
+                '255'
+                . substr(
+                    $phone,
+                    1
+                );
         }
 
-        if (strlen($phone) === 9) {
-            return '255' . $phone;
+        if (
+            strlen($phone) === 9
+            &&
+            (
+                str_starts_with(
+                    $phone,
+                    '6'
+                )
+                ||
+                str_starts_with(
+                    $phone,
+                    '7'
+                )
+            )
+        ) {
+            return
+                '255'
+                . $phone;
         }
 
-        return $phone;
+        return null;
     }
 }

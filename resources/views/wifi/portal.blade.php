@@ -1,24 +1,73 @@
+@php
+    /*
+    |--------------------------------------------------------------------------
+    | MIKROTIK PARAMETERS
+    |--------------------------------------------------------------------------
+    */
+
+    $loginUrl = $loginUrl ?? request('login');
+    $originalUrl = $originalUrl ?? request('dst');
+    $mac = $mac ?? request('mac');
+    $ip = $ip ?? request('ip');
+
+    /*
+    |--------------------------------------------------------------------------
+    | DEVICE TYPE
+    |--------------------------------------------------------------------------
+    */
+
+    if (!isset($deviceType)) {
+        $userAgent = strtolower(request()->userAgent() ?? '');
+
+        if (
+            str_contains($userAgent, 'android') ||
+            str_contains($userAgent, 'iphone') ||
+            str_contains($userAgent, 'mobile')
+        ) {
+            $deviceType = 'Simu';
+        } else {
+            $deviceType = 'Kompyuta';
+        }
+    }
+@endphp
+
 <!DOCTYPE html>
 <html lang="sw">
 
 <head>
+
     <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-    <title>Jodeka Wi-Fi</title>
+    <title>Jodeka Hotspot</title>
 
-    <!-- Google Font -->
+    {{-- ============================================================
+    GOOGLE FONT
+    ============================================================ --}}
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
+
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet">
 
-    <!-- Font Awesome -->
+
+    {{-- ============================================================
+    FONT AWESOME
+    ============================================================ --}}
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
+
     <style>
+        /*
+        |--------------------------------------------------------------------------
+        | RESET
+        |--------------------------------------------------------------------------
+        */
+
         * {
             margin: 0;
             padding: 0;
@@ -26,86 +75,139 @@
         }
 
         :root {
-            --bg: #06101d;
-            --panel: #030a14;
-            --card: #0b1829;
+            --navy: #092d79;
+            --green: #079c50;
+            --green-dark: #057b3f;
+            --blue: #168bec;
+            --white: #ffffff;
 
-            --white: #f8fafc;
-            --muted: #a7b3c6;
+            --text: #092d79;
+            --muted: #577292;
 
-            --green: #00df82;
-            --cyan: #19c9ed;
-            --blue: #2d8cff;
-            --danger: #ff6262;
+            --border: #cfe1ed;
 
-            --border: rgba(80, 151, 215, .23);
+            --light-blue: #eaf7ff;
+            --light-green: #effdf5;
+
+            --danger: #991b1b;
+        }
+
+        html,
+        body {
+            width: 100%;
+            min-height: 100%;
         }
 
         body,
         button,
         input {
-            font-family: 'Inter', sans-serif;
+            font-family:
+                'Poppins',
+                sans-serif;
         }
 
         body {
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            padding: 20px 14px;
-            color: var(--white);
 
-            background:
-                radial-gradient(circle at top,
-                    #112947 0%,
-                    #071525 42%,
-                    #030913 100%);
+            color: var(--text);
+
+            background-image:
+                url('{{ asset('images/hotspot/bus-stand-bg.png') }}');
+
+            background-size: cover;
+            background-position: center top;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+
+            background-color: #eef3f6;
         }
 
-        .portal {
-            width: 100%;
-            max-width: 500px;
-            padding: 25px;
-
-            border: 1px solid var(--border);
-            border-radius: 30px;
-
-            background:
-                linear-gradient(180deg,
-                    rgba(4, 13, 25, .98),
-                    rgba(2, 9, 18, .99));
-
-            box-shadow:
-                0 30px 90px rgba(0, 0, 0, .45);
+        button,
+        input {
+            -webkit-tap-highlight-color: transparent;
         }
 
         .hidden {
             display: none !important;
         }
 
-        /* HEADER */
 
-        .header {
+        /*
+        |--------------------------------------------------------------------------
+        | PAGE
+        |--------------------------------------------------------------------------
+        */
+
+        .portal-page {
             width: 100%;
+            min-height: 100vh;
+
             display: flex;
-            align-items: center;
+            flex-direction: column;
+        }
+
+        .page-content {
+            width: 100%;
+            flex: 1;
+
+            padding:
+                max(16px, env(safe-area-inset-top)) 16px 20px;
+        }
+
+        .page-inner {
+            width: 100%;
+            max-width: 1100px;
+
+            margin: 0 auto;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOP
+        |--------------------------------------------------------------------------
+        */
+
+        .topbar {
+            width: 100%;
+
+            min-height: 355px;
+
+            display: flex;
+            align-items: flex-start;
             justify-content: space-between;
-            margin-bottom: 6px;
+
+            position: relative;
+            z-index: 5;
         }
 
-        .logo {
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOGO
+        |--------------------------------------------------------------------------
+        */
+
+        .brand {
             display: flex;
             align-items: center;
         }
 
-        .logo img {
-            width: 72px;
-            height: 72px;
-            display: block;
+        .brand-logo {
+            width: 58px;
+            height: 58px;
+
             object-fit: contain;
-            animation: jodeka-spin 10s linear infinite;
+
+            filter:
+                drop-shadow(0 3px 7px rgba(0, 0, 0, .17));
+
+            animation:
+                jodeka-spin 12s linear infinite;
         }
 
         @keyframes jodeka-spin {
+
             from {
                 transform: rotate(0deg);
             }
@@ -113,28 +215,45 @@
             to {
                 transform: rotate(360deg);
             }
+
         }
 
-        /* LANGUAGE */
+
+        /*
+        |--------------------------------------------------------------------------
+        | LANGUAGE
+        |--------------------------------------------------------------------------
+        */
 
         .language {
             display: flex;
             align-items: center;
-            padding: 3px;
-            border-radius: 30px;
-            background: #17243a;
-            border: 1px solid rgba(148, 163, 184, .09);
+
+            padding: 4px;
+
+            border-radius: 999px;
+
+            background:
+                rgba(255, 255, 255, .96);
+
+            box-shadow:
+                0 6px 22px rgba(0, 0, 0, .16);
         }
 
         .language button {
-            min-width: 47px;
-            padding: 9px 13px;
-            border: none;
-            border-radius: 25px;
+            min-width: 46px;
+
+            padding: 8px 11px;
+
+            border: 0;
+            border-radius: 999px;
+
+            color: var(--navy);
             background: transparent;
-            color: #d5deea;
+
             cursor: pointer;
-            font-size: 14px;
+
+            font-size: 12px;
             font-weight: 800;
         }
 
@@ -143,1073 +262,1536 @@
 
             background:
                 linear-gradient(135deg,
-                    #00c96d,
-                    #00e784);
+                    #08a958,
+                    #00d778);
         }
 
-        /* TITLE */
 
-        .title {
-            margin-top: 4px;
-            margin-bottom: 22px;
-            text-align: center;
+        /*
+        |--------------------------------------------------------------------------
+        | STACK OF 3 CARDS
+        |--------------------------------------------------------------------------
+        */
+
+        .portal-stack {
+            width: 100%;
+            max-width: 430px;
+
+            margin: 0 auto;
+
+            position: relative;
+            z-index: 6;
         }
 
-        .title h1 {
-            margin-bottom: 5px;
-            color: #ffffff;
-            font-size: 30px;
-            font-weight: 800;
-        }
+        .portal-card {
+            width: 100%;
 
-        .title p {
-            color: #b8c4d4;
-            font-size: 14px;
-        }
+            border:
+                1px solid rgba(255, 255, 255, .87);
 
-        /* GENERAL CARD */
-
-        .card {
-            margin-bottom: 18px;
-            padding: 20px;
-            border: 1px solid var(--border);
-            border-radius: 19px;
+            border-radius: 18px;
 
             background:
-                linear-gradient(145deg,
-                    rgba(13, 30, 51, .97),
-                    rgba(7, 18, 32, .98));
+                rgba(255, 255, 255, .96);
+
+            box-shadow:
+                0 14px 34px rgba(0, 20, 45, .18);
+
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
         }
 
-        .section-title {
-            margin-bottom: 14px;
-            text-align: center;
-            color: #ffffff;
-            font-size: 16px;
-            font-weight: 800;
+
+        /*
+        |--------------------------------------------------------------------------
+        | CARD 1 - INSTRUCTIONS
+        |--------------------------------------------------------------------------
+        */
+
+        .instructions-card {
+            padding: 11px;
+
+            margin-bottom: 9px;
+
+            background:
+                rgba(235, 248, 255, .97);
         }
 
-        .payment-title {
-            margin-bottom: 10px;
-            color: var(--green);
-            text-align: center;
-            font-size: 18px;
-            font-weight: 800;
-        }
-
-        .payment-note {
-            color: #dce4ee;
-            text-align: center;
-            font-size: 12px;
-            line-height: 1.6;
-        }
-
-        /* MAIN OPTIONS */
-
-        .main-options {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        .main-option {
-            width: 100%;
+        .instructions-header {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 17px;
 
-            border: 1px solid var(--border);
-            border-radius: 16px;
+            gap: 7px;
 
-            color: #ffffff;
+            margin-bottom: 6px;
 
-            background:
-                linear-gradient(145deg,
-                    #10233a,
-                    #0a1728);
+            color: var(--navy);
 
-            cursor: pointer;
-            text-align: left;
-
-            transition:
-                transform .15s ease,
-                border-color .15s ease,
-                box-shadow .15s ease;
+            font-size: 11px;
+            font-weight: 800;
         }
 
-        .main-option:hover {
-            transform: translateY(-1px);
-            border-color: rgba(0, 223, 130, .55);
-        }
-
-        .option-icon {
-            width: 48px;
-            height: 48px;
-            flex: 0 0 48px;
+        .instructions-icon {
+            width: 25px;
+            height: 25px;
 
             display: flex;
             align-items: center;
             justify-content: center;
 
-            border-radius: 14px;
-            background: rgba(0, 223, 130, .10);
-        }
+            flex: 0 0 25px;
 
-        .option-icon i {
-            color: var(--green);
+            color: var(--blue);
+
+            background: transparent;
+
             font-size: 22px;
         }
 
-        .option-content {
-            flex: 1;
-            min-width: 0;
+        .instructions-card ol {
+            margin: 0;
+
+            padding-left: 19px;
+
+            color: #174f8f;
+
+            font-size: 8px;
+            line-height: 1.55;
         }
 
-        .option-title {
-            margin-bottom: 4px;
-            color: var(--green);
-            font-size: 16px;
-            font-weight: 800;
+        .instructions-card li+li {
+            margin-top: 2px;
         }
 
-        .option-description {
-            color: #b9c5d4;
-            font-size: 11px;
-            line-height: 1.4;
-        }
-
-        .option-arrow {
-            color: #9fb0c4;
-            font-size: 17px;
-        }
-
-        /* BACK BUTTON */
-
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            margin-bottom: 12px;
-            padding: 0;
-            border: none;
-            background: transparent;
-            color: #aebdce;
-            cursor: pointer;
-            font-size: 12px;
+        .instructions-card strong {
+            color: var(--navy);
             font-weight: 700;
         }
 
-        .back-button:hover {
-            color: var(--green);
-        }
 
-        .back-button i {
-            font-size: 11px;
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | CARD 2 - PAYMENT + LOGIN
+        |--------------------------------------------------------------------------
+        */
 
-        /* PACKAGE CARDS */
+        .access-card {
+            padding: 11px;
 
-        .package-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-        }
-
-        .package {
-            width: 100%;
-            padding: 17px 12px;
-            text-align: center;
-
-            border: 1px solid var(--border);
-            border-radius: 16px;
-
-            color: #ffffff;
-
-            background:
-                linear-gradient(145deg,
-                    #0d1b2d,
-                    #081525);
-
-            cursor: pointer;
-
-            transition:
-                transform .15s ease,
-                border-color .15s ease,
-                box-shadow .15s ease;
-        }
-
-        .package:hover {
-            transform: translateY(-1px);
-            border-color: rgba(0, 223, 130, .50);
-        }
-
-        .package.selected {
-            border-color: var(--green);
-
-            box-shadow:
-                0 0 0 2px rgba(0, 223, 130, .12),
-                0 10px 28px rgba(0, 223, 130, .10);
-        }
-
-        .package-price {
             margin-bottom: 9px;
-            color: var(--green);
-            font-size: 20px;
-            font-weight: 800;
         }
 
-        .package-duration {
-            padding-top: 9px;
-            border-top: 1px solid rgba(148, 163, 184, .22);
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: 700;
-        }
 
-        /* PACKAGE TABLE */
+        /*
+        |--------------------------------------------------------------------------
+        | PAYMENT
+        |--------------------------------------------------------------------------
+        */
 
-        .package-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            overflow: hidden;
+        .payment-box {
+            display: grid;
 
-            border: 1px solid rgba(91, 155, 211, .28);
+            grid-template-columns:
+                52px minmax(0, 1fr);
+
+            align-items: center;
+
+            gap: 9px;
+
+            padding: 9px;
+
+            margin-bottom: 8px;
+
+            border:
+                1px solid #d3eddf;
+
             border-radius: 13px;
 
-            font-size: 12px;
+            background:
+                linear-gradient(135deg,
+                    #effdf5,
+                    #e7faf0);
         }
 
-        .package-table th,
-        .package-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(148, 163, 184, .15);
-        }
-
-        .package-table th {
-            text-align: left;
-            color: #dbe6f2;
-            background: rgba(255, 255, 255, .04);
-            font-size: 10px;
-            font-weight: 800;
-        }
-
-        .package-table td {
-            color: #ffffff;
-        }
-
-        .package-table td:first-child {
-            color: var(--green);
-            font-weight: 800;
-        }
-
-        .package-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* LIPA NAMBA */
-
-        .pay-number-box {
-            margin-bottom: 14px;
-            padding: 16px;
+        .payment-icon {
             text-align: center;
 
-            border: 1px solid rgba(0, 223, 130, .30);
-            border-radius: 14px;
-
-            background:
-                linear-gradient(145deg,
-                    rgba(0, 223, 130, .07),
-                    rgba(7, 18, 32, .95));
+            color: var(--green);
         }
 
-        .pay-number-label {
-            margin-bottom: 5px;
-            color: #d2dbe7;
-            font-size: 10px;
+        .payment-phone-icon {
+            width: 30px;
+            height: 34px;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            color: var(--green);
+
+            font-size: 26px;
+        }
+
+        .payment-icon strong {
+            display: block;
+
+            margin-top: 2px;
+
+            font-size: 8px;
+            font-weight: 800;
+        }
+
+        .payment-label {
+            color: var(--navy);
+
+            font-size: 8px;
             font-weight: 700;
         }
 
-        .pay-number {
-            margin-bottom: 12px;
+        .payment-number {
+            margin: 1px 0;
+
             color: var(--green);
-            font-size: 27px;
+
+            font-size: 23px;
             font-weight: 900;
-            letter-spacing: 1px;
+
+            line-height: 1.05;
+            letter-spacing: .4px;
         }
 
-        .pay-amount-label {
-            margin-bottom: 4px;
-            color: #d2dbe7;
-            font-size: 10px;
+        .account-name {
+            color: var(--navy);
+
+            font-size: 6.5px;
+            font-weight: 500;
         }
 
-        .pay-amount {
-            color: #ffffff;
-            font-size: 19px;
+        .account-name strong {
             font-weight: 800;
         }
 
-        .reference-note {
-            margin-bottom: 10px;
-            color: #cdd8e7;
-            text-align: center;
-            font-size: 11px;
-            line-height: 1.5;
-        }
 
-        /* INPUTS */
+        /*
+        |--------------------------------------------------------------------------
+        | LOGIN
+        |--------------------------------------------------------------------------
+        */
 
-        .voucher-input,
-        .payment-input {
-            width: 100%;
-            margin-bottom: 11px;
-            padding: 15px 17px;
+        .login-box {
+            padding: 9px;
 
-            border: 1px solid rgba(91, 155, 211, .35);
-            border-radius: 12px;
+            border:
+                1px solid #d0e7f5;
 
-            outline: none;
-            color: #ffffff;
+            border-radius: 13px;
 
             background:
-                linear-gradient(145deg,
-                    #11243b,
-                    #0e1d31);
-
-            font-size: 16px;
+                linear-gradient(135deg,
+                    #eef9ff,
+                    #e1f4ff);
         }
 
-        .voucher-input::placeholder,
-        .payment-input::placeholder {
-            color: #92a1b7;
+        .login-title {
+            color: var(--navy);
+
+            font-size: 13px;
+            font-weight: 800;
+
+            line-height: 1.15;
         }
 
-        .voucher-input:focus,
-        .payment-input:focus {
-            border-color: rgba(0, 223, 130, .65);
+        .login-description {
+            margin-top: 3px;
+            margin-bottom: 7px;
+
+            color: #285c98;
+
+            font-size: 7.5px;
+            font-weight: 500;
+
+            line-height: 1.35;
         }
 
-        /* ACTION BUTTONS */
 
-        .connect-button,
-        .verify-button {
-            width: 100%;
+        /*
+        |--------------------------------------------------------------------------
+        | INPUT
+        |--------------------------------------------------------------------------
+        */
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+
+            left: 12px;
+            top: 50%;
+
+            transform:
+                translateY(-50%);
+
+            width: 20px;
 
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
 
-            padding: 15px;
-            border: none;
-            border-radius: 13px;
+            color: #8da2bc;
 
-            cursor: pointer;
+            font-size: 17px;
+
+            pointer-events: none;
+        }
+
+        .access-input {
+            width: 100%;
+
+            min-height: 42px;
+
+            padding:
+                10px 10px 10px 42px;
+
+            border:
+                1px solid #bfd2e4;
+
+            border-radius: 11px;
+
+            outline: none;
+
+            color: var(--navy);
+
+            background: #ffffff;
+
+            font-size: 10.5px;
+            font-weight: 500;
+        }
+
+        .access-input::placeholder {
+            color: #93a4bb;
+        }
+
+        .access-input:focus {
+            border-color: var(--green);
+
+            box-shadow:
+                0 0 0 3px rgba(8, 151, 77, .10);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CONNECT
+        |--------------------------------------------------------------------------
+        */
+
+        .connect-button {
+            width: 100%;
+
+            min-height: 42px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            gap: 8px;
+
+            margin-top: 8px;
+
+            padding: 9px 12px;
+
+            border: 0;
+            border-radius: 11px;
+
             color: #ffffff;
 
             background:
-                linear-gradient(105deg,
-                    #00dd78,
-                    #16cbed);
+                linear-gradient(90deg,
+                    #06994d,
+                    #08b45b);
 
-            font-size: 17px;
+            cursor: pointer;
+
+            font-size: 13px;
             font-weight: 800;
 
             box-shadow:
-                0 10px 25px rgba(0, 215, 120, .15);
+                0 8px 18px rgba(8, 151, 77, .17);
         }
 
-        .connect-button i,
-        .verify-button i {
-            font-size: 18px;
-        }
-
-        .connect-button:disabled,
-        .verify-button:disabled {
+        .connect-button:disabled {
             opacity: .55;
             cursor: not-allowed;
         }
 
-        /* STATUS */
+        .wifi-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 16px;
+
+            line-height: 1;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | STATUS
+        |--------------------------------------------------------------------------
+        */
 
         .status-message {
-            margin-top: 11px;
-            padding: 11px 12px;
-            border-radius: 10px;
+            margin-top: 7px;
+
+            padding: 8px;
+
+            border-radius: 9px;
+
             text-align: center;
-            font-size: 11px;
-            line-height: 1.5;
+
+            font-size: 8px;
+            font-weight: 500;
+
+            line-height: 1.4;
         }
 
         .status-message.info {
-            color: #d9ecff;
-            border: 1px solid rgba(45, 140, 255, .30);
-            background: rgba(45, 140, 255, .08);
+            color: #075985;
+            background: #dff3ff;
         }
 
         .status-message.success {
-            color: #caffdf;
-            border: 1px solid rgba(0, 223, 130, .30);
-            background: rgba(0, 223, 130, .08);
+            color: #166534;
+            background: #dcfce7;
         }
 
         .status-message.error {
-            color: #ffd3d3;
-            border: 1px solid rgba(255, 98, 98, .32);
-            background: rgba(255, 98, 98, .08);
+            color: #991b1b;
+            background: #fee2e2;
         }
 
-        /* DEVICE INFO */
 
-        .device-card {
+        /*
+        |--------------------------------------------------------------------------
+        | CARD 3
+        |--------------------------------------------------------------------------
+        */
+
+        .info-card {
+            padding: 10px;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DEVICE INFO
+        |--------------------------------------------------------------------------
+        */
+
+        .device-info {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
 
-            margin-top: 16px;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+
             overflow: hidden;
 
-            border: 1px solid var(--border);
-            border-radius: 15px;
+            border:
+                1px solid #d9e5ee;
+
+            border-radius: 11px;
 
             background:
-                linear-gradient(145deg,
-                    #0d1d31,
-                    #091625);
+                rgba(248, 251, 254, .98);
         }
 
         .device-item {
-            min-width: 0;
-            padding: 14px 12px;
+            padding: 7px;
         }
 
         .device-item+.device-item {
-            border-left: 1px solid rgba(148, 163, 184, .25);
+            border-left:
+                1px solid #d9e5ee;
         }
 
         .device-label {
-            margin-bottom: 5px;
-            color: #b1bdcc;
-            font-size: 11px;
+            margin-bottom: 2px;
+
+            color: #68809d;
+
+            font-size: 6px;
+            font-weight: 500;
         }
 
         .device-value {
-            color: #ffffff;
-            font-size: 13px;
+            color: var(--navy);
+
+            font-size: 7px;
             font-weight: 700;
+
             overflow-wrap: anywhere;
         }
 
-        /* FOOTER */
 
-        .footer {
-            margin-top: 19px;
-            padding-top: 17px;
-            border-top: 1px solid rgba(203, 213, 225, .45);
-            color: #c4cfdd;
-            text-align: center;
-            font-size: 12px;
+        /*
+        |--------------------------------------------------------------------------
+        | SERVICE GRID
+        |--------------------------------------------------------------------------
+        */
+
+        .service-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            margin-top: 8px;
+
+            overflow: hidden;
+
+            border:
+                1px solid #dce7ef;
+
+            border-radius: 11px;
+
+            background:
+                rgba(255, 255, 255, .93);
         }
 
-        /* MOBILE */
+        .service-item {
+            display: flex;
+            align-items: center;
 
-        @media (max-width: 480px) {
+            min-width: 0;
+
+            gap: 7px;
+
+            padding: 8px;
+        }
+
+        .service-item:nth-child(2),
+        .service-item:nth-child(4) {
+            border-left:
+                1px solid #dce7ef;
+        }
+
+        .service-item:nth-child(3),
+        .service-item:nth-child(4) {
+            border-top:
+                1px solid #dce7ef;
+        }
+
+        .service-icon {
+            width: 25px;
+
+            flex: 0 0 25px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: var(--green);
+
+            font-size: 15px;
+        }
+
+        .service-title {
+            color: var(--navy);
+
+            font-size: 6px;
+            font-weight: 800;
+        }
+
+        .service-text {
+            margin-top: 1px;
+
+            color: #607895;
+
+            font-size: 5px;
+            font-weight: 500;
+
+            line-height: 1.25;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FOOTER
+        |--------------------------------------------------------------------------
+        */
+
+        .footer {
+            width: 100%;
+
+            margin-top: 10px;
+
+            padding:
+                9px 10px max(9px, env(safe-area-inset-bottom));
+
+            color: #ffffff;
+
+            background:
+                rgba(0, 21, 55, .46);
+
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+
+            text-align: center;
+
+            font-size: 8px;
+            font-weight: 500;
+
+            font-style: italic;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TABLET
+        |--------------------------------------------------------------------------
+        */
+
+        @media (min-width: 701px) and (max-width: 1100px) {
 
             body {
-                padding: 0;
-                background: #040b14;
+                background-size: cover;
+                background-position: center top;
             }
 
-            .portal {
+            .page-content {
+                padding:
+                    14px 18px 20px;
+            }
+
+            .topbar {
+                min-height: 390px;
+            }
+
+            .portal-stack {
+                max-width: 420px;
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | MOBILE
+        |--------------------------------------------------------------------------
+        */
+
+        @media (max-width: 700px) {
+
+            html,
+            body {
+                width: 100%;
+                min-height: 100%;
+            }
+
+            body {
                 min-height: 100vh;
-                padding: 14px 12px 16px;
-                border: none;
-                border-radius: 0;
+
+                background-image:
+                    url('{{ asset('images/hotspot/bus-stand-bg.png') }}');
+
+                background-size: cover;
+
+                background-position:
+                    center top;
+
+                background-repeat:
+                    no-repeat;
+
+                background-attachment:
+                    fixed;
+
+                background-color:
+                    transparent;
             }
 
-            .logo img {
-                width: 55px;
-                height: 55px;
+            .portal-page {
+                width: 100%;
+                min-height: 100vh;
+
+                background: transparent;
             }
+
+            .page-content {
+                width: 100%;
+
+                padding:
+                    max(8px, env(safe-area-inset-top)) 7px 10px;
+
+                background: transparent;
+            }
+
+            .page-inner {
+                width: 100%;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | HERO SPACE
+            |--------------------------------------------------------------------------
+            */
+
+            .topbar {
+                width: 100%;
+
+                min-height:
+                    clamp(300px,
+                        74vw,
+                        345px);
+
+                position: relative;
+                z-index: 5;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | LOGO
+            |--------------------------------------------------------------------------
+            */
+
+            .brand-logo {
+                width: 44px;
+                height: 44px;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | LANGUAGE
+            |--------------------------------------------------------------------------
+            */
 
             .language {
-                padding: 2px;
+                padding: 3px;
             }
 
             .language button {
-                min-width: 40px;
-                padding: 7px 10px;
-                font-size: 12px;
-            }
+                min-width: 35px;
 
-            .title {
-                margin-top: 0;
-                margin-bottom: 15px;
-            }
+                padding: 5px 7px;
 
-            .title h1 {
-                margin-bottom: 3px;
-                font-size: 23px;
-            }
-
-            .title p {
-                font-size: 11px;
-            }
-
-            .card {
-                padding: 14px;
-                margin-bottom: 13px;
-                border-radius: 15px;
-            }
-
-            .section-title {
-                margin-bottom: 11px;
-                font-size: 13px;
-            }
-
-            .payment-title {
-                font-size: 15px;
-            }
-
-            .payment-note {
-                font-size: 10px;
-            }
-
-            .main-option {
-                padding: 13px;
-                gap: 11px;
-            }
-
-            .option-icon {
-                width: 42px;
-                height: 42px;
-                flex-basis: 42px;
-            }
-
-            .option-icon i {
-                font-size: 19px;
-            }
-
-            .option-title {
-                font-size: 14px;
-            }
-
-            .option-description {
                 font-size: 9px;
             }
 
-            .option-arrow {
-                font-size: 14px;
+
+            /*
+            |--------------------------------------------------------------------------
+            | STACK
+            |--------------------------------------------------------------------------
+            */
+
+            .portal-stack {
+                width: 86%;
+                max-width: 360px;
+
+                margin: 0 auto;
             }
 
-            .package-grid {
-                gap: 9px;
+
+            /*
+            |--------------------------------------------------------------------------
+            | CARD 1
+            |--------------------------------------------------------------------------
+            */
+
+            .instructions-card {
+                margin-top: -20px;
+
+                margin-bottom: 8px;
+
+                padding: 9px;
+
+                border-radius: 14px;
             }
 
-            .package {
-                padding: 11px 7px;
-                border-radius: 13px;
-            }
+            .instructions-header {
+                gap: 6px;
 
-            .package-price {
                 margin-bottom: 5px;
-                font-size: 16px;
-            }
 
-            .package-duration {
-                padding-top: 6px;
                 font-size: 11px;
             }
 
-            .package-table {
-                font-size: 10px;
+            .instructions-icon {
+                width: 22px;
+                height: 22px;
+
+                flex-basis: 22px;
+
+                font-size: 19px;
             }
 
-            .package-table th,
-            .package-table td {
-                padding: 8px 9px;
+            .instructions-card ol {
+                padding-left: 17px;
+
+                font-size: 8px;
+
+                line-height: 1.5;
             }
 
-            .pay-number-box {
-                padding: 12px;
+
+            /*
+            |--------------------------------------------------------------------------
+            | CARD 2
+            |--------------------------------------------------------------------------
+            */
+
+            .access-card {
+                padding: 8px;
+
+                margin-bottom: 8px;
+
+                border-radius: 14px;
             }
 
-            .pay-number {
+
+            /*
+            |--------------------------------------------------------------------------
+            | PAYMENT
+            |--------------------------------------------------------------------------
+            */
+
+            .payment-box {
+                grid-template-columns:
+                    43px minmax(0, 1fr);
+
+                gap: 7px;
+
+                padding: 7px;
+
+                margin-bottom: 7px;
+
+                border-radius: 11px;
+            }
+
+            .payment-phone-icon {
+                width: 24px;
+                height: 28px;
+
                 font-size: 22px;
             }
 
-            .pay-amount {
-                font-size: 15px;
-            }
+            .payment-icon strong {
+                margin-top: 2px;
 
-            .reference-note {
-                font-size: 10px;
-            }
-
-            .voucher-input,
-            .payment-input {
-                margin-bottom: 9px;
-                padding: 12px 13px;
-                font-size: 13px;
-            }
-
-            .connect-button,
-            .verify-button {
-                padding: 12px;
-                gap: 8px;
-                font-size: 14px;
-            }
-
-            .connect-button i,
-            .verify-button i {
-                font-size: 15px;
-            }
-
-            .device-card {
-                margin-top: 12px;
-            }
-
-            .device-item {
-                padding: 10px 8px;
-            }
-
-            .device-label {
-                margin-bottom: 3px;
                 font-size: 8px;
             }
 
-            .device-value {
-                font-size: 10px;
+            .payment-label {
+                font-size: 8px;
             }
 
-            .footer {
-                margin-top: 13px;
-                padding-top: 12px;
-                font-size: 10px;
+            .payment-number {
+                font-size: 20px;
             }
+
+            .account-name {
+                font-size: 7px;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | LOGIN
+            |--------------------------------------------------------------------------
+            */
+
+            .login-box {
+                padding: 7px;
+
+                border-radius: 11px;
+            }
+
+            .login-title {
+                font-size: 14px;
+            }
+
+            .login-description {
+                margin-top: 3px;
+                margin-bottom: 7px;
+
+                font-size: 8px;
+
+                line-height: 1.35;
+            }
+
+            .access-input {
+                min-height: 40px;
+
+                padding:
+                    9px 9px 9px 38px;
+
+                font-size: 11px;
+            }
+
+            .input-icon {
+                left: 11px;
+
+                width: 18px;
+
+                font-size: 15px;
+            }
+
+            .connect-button {
+                min-height: 40px;
+
+                margin-top: 7px;
+
+                padding: 8px;
+
+                font-size: 13px;
+            }
+
+            .wifi-icon {
+                font-size: 15px;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CARD 3
+            |--------------------------------------------------------------------------
+            */
+
+            .info-card {
+                padding: 8px;
+
+                border-radius: 14px;
+            }
+
+            .device-item {
+                padding: 6px;
+            }
+
+            .device-label {
+                font-size: 6.5px;
+            }
+
+            .device-value {
+                font-size: 7.5px;
+            }
+
+            .service-grid {
+                margin-top: 7px;
+            }
+
+            .service-item {
+                padding: 7px;
+            }
+
+            .service-icon {
+                width: 21px;
+                flex-basis: 21px;
+
+                font-size: 13px;
+            }
+
+            .service-title {
+                font-size: 7px;
+            }
+
+            .service-text {
+                font-size: 6px;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | FOOTER
+            |--------------------------------------------------------------------------
+            */
+
+            .footer {
+                margin-top: 7px;
+
+                padding:
+                    7px 5px max(7px, env(safe-area-inset-bottom));
+
+                font-size: 7px;
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SMALL MOBILE
+        |--------------------------------------------------------------------------
+        */
+
+        @media (max-width: 390px) {
+
+            .page-content {
+                padding-left: 5px;
+                padding-right: 5px;
+            }
+
+            .topbar {
+                min-height:
+                    clamp(280px,
+                        76vw,
+                        310px);
+            }
+
+            .brand-logo {
+                width: 40px;
+                height: 40px;
+            }
+
+            .language button {
+                min-width: 32px;
+
+                padding: 4px 6px;
+
+                font-size: 8px;
+            }
+
+            .portal-stack {
+                width: 90%;
+                max-width: 340px;
+            }
+
+            .instructions-card {
+                margin-top: -16px;
+            }
+
+            .instructions-card ol {
+                font-size: 7.5px;
+            }
+
+            .payment-number {
+                font-size: 19px;
+            }
+
+            .login-title {
+                font-size: 13px;
+            }
+
+            .login-description {
+                font-size: 7.5px;
+            }
+
+            .device-label {
+                font-size: 6px;
+            }
+
+            .device-value {
+                font-size: 7px;
+            }
+
+            .service-title {
+                font-size: 6.5px;
+            }
+
+            .service-text {
+                font-size: 5.5px;
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VERY SMALL MOBILE
+        |--------------------------------------------------------------------------
+        */
+
+        @media (max-width: 340px) {
+
+            .page-content {
+                padding-left: 4px;
+                padding-right: 4px;
+            }
+
+            .topbar {
+                min-height: 265px;
+            }
+
+            .portal-stack {
+                width: 94%;
+            }
+
+            .instructions-card,
+            .access-card,
+            .info-card {
+                padding: 6px;
+            }
+
+            .instructions-card ol {
+                font-size: 7px;
+            }
+
+            .login-title {
+                font-size: 12px;
+            }
+
+            .login-description {
+                font-size: 7px;
+            }
+
+            .device-info {
+                grid-template-columns: 1fr;
+            }
+
+            .device-item+.device-item {
+                border-left: 0;
+
+                border-top:
+                    1px solid #d9e5ee;
+            }
+
+            .service-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .service-item:nth-child(2),
+            .service-item:nth-child(3),
+            .service-item:nth-child(4) {
+                border-left: 0;
+
+                border-top:
+                    1px solid #dce7ef;
+            }
+
         }
     </style>
+
 </head>
 
 <body>
 
-    <div class="portal">
+    <div class="portal-page">
 
-        {{-- HEADER --}}
+        <div class="page-content">
 
-        <div class="header">
-
-            <div class="logo">
-                <img src="{{ asset('images/jodeka-logo.png') }}" alt="Jodeka Logo">
-            </div>
-
-            <div class="language">
-
-                <button type="button" id="swButton" class="active" onclick="setLanguage('sw')">
-                    SW
-                </button>
-
-                <button type="button" id="enButton" onclick="setLanguage('en')">
-                    EN
-                </button>
-
-            </div>
-
-        </div>
+            <div class="page-inner">
 
 
-        {{-- TITLE --}}
+                {{-- ============================================================
+                TOP
+                ============================================================ --}}
 
-        <div class="title">
+                <header class="topbar">
 
-            <h1>Jodeka Hotspot</h1>
+                    <div class="brand">
 
-            <p data-sw="Haraka • Salama • Rahisi" data-en="Fast • Secure • Easy">
-                Haraka • Salama • Rahisi
-            </p>
+                        <img src="{{ asset('images/jodeka-logo.png') }}" alt="Jodeka" class="brand-logo">
 
-        </div>
-
-
-        {{-- WELCOME --}}
-
-        <div id="welcomeCard" class="card">
-
-            <div class="payment-title" data-sw="KARIBU JODEKA HOTSPOT" data-en="WELCOME TO JODEKA HOTSPOT">
-                KARIBU JODEKA HOTSPOT
-            </div>
-
-            <div class="payment-note"
-                data-sw="Furahia internet ya haraka, salama na rahisi. Chagua njia unayotaka kutumia hapa chini ili kuunganishwa."
-                data-en="Enjoy fast, secure and easy internet. Choose how you want to connect below.">
-
-                Furahia internet ya haraka, salama na rahisi.
-                Chagua njia unayotaka kutumia hapa chini ili kuunganishwa.
-
-            </div>
-
-        </div>
-
-
-        {{-- MAIN OPTIONS --}}
-
-        <div id="mainChoiceCard" class="card">
-
-            <div class="section-title" data-sw="CHAGUA NJIA YA KUUNGANISHWA" data-en="CHOOSE HOW TO CONNECT">
-                CHAGUA NJIA YA KUUNGANISHWA
-            </div>
-
-            <div class="main-options">
-
-                <button type="button" class="main-option" onclick="openPhonePayment()">
-
-                    <div class="option-icon">
-                        <i class="fa-solid fa-mobile-screen-button"></i>
                     </div>
 
-                    <div class="option-content">
+                    <div class="language">
 
-                        <div class="option-title" data-sw="LIPA KWA SIMU" data-en="PAY BY PHONE">
-                            LIPA KWA SIMU
+                        <button type="button" id="swButton" class="active" onclick="setLanguage('sw')">
+
+                            SW
+
+                        </button>
+
+                        <button type="button" id="enButton" onclick="setLanguage('en')">
+
+                            EN
+
+                        </button>
+
+                    </div>
+
+                </header>
+
+
+                {{-- ============================================================
+                THREE CARDS
+                ============================================================ --}}
+
+                <div class="portal-stack">
+
+
+                    {{-- ========================================================
+                    CARD 1 : INSTRUCTIONS
+                    ========================================================= --}}
+
+                    <section class="portal-card instructions-card">
+
+                        <div class="instructions-header">
+
+                            <span class="instructions-icon">
+
+                                <i class="fa-solid fa-circle-info"></i>
+
+                            </span>
+
+                            <span data-sw="Maelekezo" data-en="Instructions">
+
+                                Maelekezo
+
+                            </span>
+
                         </div>
 
-                        <div class="option-description" data-sw="Chagua kifurushi na ulipe kupitia Lipa Namba."
-                            data-en="Select a package and pay using the Pay Number.">
-                            Chagua kifurushi na ulipe kupitia Lipa Namba.
+                        <ol>
+
+                            <li>
+
+                                <strong data-sw="Kulipia kwa Lipa Namba:" data-en="Pay using Lipa Number:">
+
+                                    Kulipia kwa Lipa Namba:
+
+                                </strong>
+
+                                <span
+                                    data-sw=" Lipa kifurushi unachotaka, kisha ingiza namba ya simu iliyofanya malipo."
+                                    data-en=" Pay for your preferred package, then enter the phone number used for payment.">
+
+                                    Lipa kifurushi unachotaka,
+                                    kisha ingiza namba ya simu iliyofanya malipo.
+
+                                </span>
+
+                            </li>
+
+                            <li>
+
+                                <strong data-sw="Kulipia cash:" data-en="Paying cash:">
+
+                                    Kulipia cash:
+
+                                </strong>
+
+                                <span data-sw=" Ingiza voucher uliyopewa." data-en=" Enter the voucher you received.">
+
+                                    Ingiza voucher uliyopewa.
+
+                                </span>
+
+                            </li>
+
+                            <li data-sw="Hakikisha unaingiza namba ileile iliyotumika kufanya malipo."
+                                data-en="Make sure you enter the same phone number used for payment.">
+
+                                Hakikisha unaingiza namba ileile iliyotumika kufanya malipo.
+
+                            </li>
+
+                        </ol>
+
+                    </section>
+
+
+                    {{-- ========================================================
+                    CARD 2 : PAYMENT + LOGIN
+                    ========================================================= --}}
+
+                    <section class="portal-card access-card">
+
+
+                        {{-- PAYMENT --}}
+
+                        <div class="payment-box">
+
+                            <div class="payment-icon">
+
+                                <span class="payment-phone-icon">
+
+                                    <i class="fa-solid fa-mobile-screen-button"></i>
+
+                                </span>
+
+                                <strong>
+                                    LIPA
+                                </strong>
+
+                            </div>
+
+                            <div>
+
+                                <div class="payment-label" data-sw="Lipa kwa Lipa Namba"
+                                    data-en="Pay using Lipa Number">
+
+                                    Lipa kwa Lipa Namba
+
+                                </div>
+
+                                <div class="payment-number">
+                                    19361296
+                                </div>
+
+                                <div class="account-name">
+
+                                    <span data-sw="Jina la akaunti:" data-en="Account name:">
+
+                                        Jina la akaunti:
+
+                                    </span>
+
+                                    <strong>
+                                        JACKSON
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
                         </div>
 
-                    </div>
 
-                    <div class="option-arrow">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </div>
+                        {{-- LOGIN --}}
 
-                </button>
+                        <div class="login-box">
 
+                            <div class="login-title" data-sw="Namba ya simu au Voucher"
+                                data-en="Phone Number or Voucher">
 
-                <button type="button" class="main-option" onclick="openCashVoucher()">
+                                Namba ya simu au Voucher
 
-                    <div class="option-icon">
-                        <i class="fa-solid fa-ticket"></i>
-                    </div>
+                            </div>
 
-                    <div class="option-content">
+                            <div class="login-description"
+                                data-sw="Ingiza namba ya simu uliyotumia kulipia au voucher uliyopewa."
+                                data-en="Enter the phone number used for payment or the voucher you received.">
 
-                        <div class="option-title" data-sw="CASH / VOUCHER" data-en="CASH / VOUCHER">
-                            CASH / VOUCHER
+                                Ingiza namba ya simu uliyotumia kulipia
+                                au voucher uliyopewa.
+
+                            </div>
+
+                            <div class="input-wrap">
+
+                                <span class="input-icon">
+
+                                    <i class="fa-regular fa-user"></i>
+
+                                </span>
+
+                                <input type="text" id="accessCode" class="access-input" autocomplete="off"
+                                    autocapitalize="characters" spellcheck="false" inputmode="text"
+                                    placeholder="Mfano: 0659840000 au JDK34587">
+
+                            </div>
+
+                            <button type="button" id="connectButton" class="connect-button" onclick="processAccess()">
+
+                                <span class="wifi-icon">
+
+                                    <i class="fa-solid fa-wifi"></i>
+
+                                </span>
+
+                                <span data-sw="INGIA" data-en="CONNECT">
+
+                                    INGIA
+
+                                </span>
+
+                            </button>
+
+                            <div id="statusMessage" class="status-message hidden">
+                            </div>
+
                         </div>
 
-                        <div class="option-description"
-                            data-sw="Lipia Cash ofisini kwetu na upewe Voucher Code, au ingiza voucher uliyonayo."
-                            data-en="Pay cash at our office and receive a Voucher Code, or enter a voucher you already have.">
-                            Lipia Cash ofisini kwetu na upewe Voucher Code, au ingiza voucher uliyonayo.
+                    </section>
+
+
+                    {{-- ========================================================
+                    CARD 3 : DEVICE + SERVICES
+                    ========================================================= --}}
+
+                    <section class="portal-card info-card">
+
+
+                        {{-- DEVICE INFO --}}
+
+                        <div class="device-info">
+
+                            <div class="device-item">
+
+                                <div class="device-label">
+                                    MAC Address
+                                </div>
+
+                                <div class="device-value">
+                                    {{ $mac ?: '-' }}
+                                </div>
+
+                            </div>
+
+
+                            <div class="device-item">
+
+                                <div class="device-label">
+                                    IP Address
+                                </div>
+
+                                <div class="device-value">
+                                    {{ $ip ?: '-' }}
+                                </div>
+
+                            </div>
+
+
+                            <div class="device-item">
+
+                                <div class="device-label" data-sw="Aina ya Kifaa" data-en="Device Type">
+
+                                    Aina ya Kifaa
+
+                                </div>
+
+                                <div class="device-value">
+                                    {{ $deviceType }}
+                                </div>
+
+                            </div>
+
                         </div>
 
-                    </div>
 
-                    <div class="option-arrow">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </div>
+                        {{-- SERVICES --}}
 
-                </button>
+                        <div class="service-grid">
 
-            </div>
 
-        </div>
+                            <div class="service-item">
 
+                                <span class="service-icon">
 
-        {{-- PHONE PAYMENT PACKAGES --}}
+                                    <i class="fa-solid fa-globe"></i>
 
-        <div id="phonePackagesCard" class="card hidden">
+                                </span>
 
-            <button type="button" class="back-button" onclick="goHome()">
+                                <div>
 
-                <i class="fa-solid fa-arrow-left"></i>
+                                    <div class="service-title" data-sw="Intaneti ya Haraka" data-en="Fast Internet">
 
-                <span data-sw="Rudi" data-en="Back">
-                    Rudi
-                </span>
+                                        Intaneti ya Haraka
 
-            </button>
+                                    </div>
 
-            <div class="payment-title" data-sw="CHAGUA KIFURUSHI" data-en="SELECT A PACKAGE">
-                CHAGUA KIFURUSHI
-            </div>
+                                    <div class="service-text" data-sw="Browse, stream na kazi"
+                                        data-en="Browse, stream and work">
 
-            <div class="package-grid">
+                                        Browse, stream na kazi
 
-                <button type="button" class="package" data-amount="200" onclick="selectPackage(this)">
+                                    </div>
 
-                    <div class="package-price">
-                        200 TZS
-                    </div>
+                                </div>
 
-                    <div class="package-duration" data-sw="Dakika 30" data-en="30 Minutes">
-                        Dakika 30
-                    </div>
+                            </div>
 
-                </button>
 
+                            <div class="service-item">
 
-                <button type="button" class="package" data-amount="500" onclick="selectPackage(this)">
+                                <span class="service-icon">
 
-                    <div class="package-price">
-                        500 TZS
-                    </div>
+                                    <i class="fa-solid fa-shield-halved"></i>
 
-                    <div class="package-duration" data-sw="Saa 12" data-en="12 Hours">
-                        Saa 12
-                    </div>
+                                </span>
 
-                </button>
+                                <div>
 
+                                    <div class="service-title" data-sw="Salama na ya Kuaminika"
+                                        data-en="Secure & Reliable">
 
-                <button type="button" class="package" data-amount="1000" onclick="selectPackage(this)">
+                                        Salama na ya Kuaminika
 
-                    <div class="package-price">
-                        1,000 TZS
-                    </div>
+                                    </div>
 
-                    <div class="package-duration" data-sw="Saa 24" data-en="24 Hours">
-                        Saa 24
-                    </div>
+                                    <div class="service-text" data-sw="Huduma bora ya intaneti"
+                                        data-en="Reliable internet service">
 
-                </button>
+                                        Huduma bora ya intaneti
 
+                                    </div>
 
-                <button type="button" class="package" data-amount="3000" onclick="selectPackage(this)">
+                                </div>
 
-                    <div class="package-price">
-                        3,000 TZS
-                    </div>
+                            </div>
 
-                    <div class="package-duration" data-sw="Siku 7" data-en="7 Days">
-                        Siku 7
-                    </div>
 
-                </button>
+                            <div class="service-item">
 
-            </div>
+                                <span class="service-icon">
 
-        </div>
+                                    <i class="fa-solid fa-users"></i>
 
+                                </span>
 
-        {{-- LIPA NAMBA --}}
+                                <div>
 
-        <div id="lipaNumberCard" class="card hidden">
+                                    <div class="service-title" data-sw="Kwa Wote" data-en="For Everyone">
 
-            <button type="button" class="back-button" onclick="backToPackages()">
+                                        Kwa Wote
 
-                <i class="fa-solid fa-arrow-left"></i>
+                                    </div>
 
-                <span data-sw="Badili kifurushi" data-en="Change package">
-                    Badili kifurushi
-                </span>
+                                    <div class="service-text" data-sw="Wakazi na wasafiri"
+                                        data-en="Residents and travellers">
 
-            </button>
+                                        Wakazi na wasafiri
 
-            <div class="payment-title" data-sw="LIPA KWA SIMU" data-en="PAY BY PHONE">
-                LIPA KWA SIMU
-            </div>
+                                    </div>
 
-            <div class="pay-number-box">
+                                </div>
 
-                <div class="pay-number-label" data-sw="LIPA NAMBA YAS" data-en="YAS PAY NUMBER">
-                    LIPA NAMBA YAS
-                </div>
+                            </div>
 
-                <div class="pay-number">
-                    19361296
-                </div>
 
-                <div class="pay-amount-label" data-sw="KIASI CHA KULIPA" data-en="AMOUNT TO PAY">
-                    KIASI CHA KULIPA
-                </div>
+                            <div class="service-item">
 
-                <div id="payAmountText" class="pay-amount">
-                </div>
+                                <span class="service-icon">
 
-            </div>
+                                    <i class="fa-solid fa-signal"></i>
 
-            <div class="reference-note" data-sw="Baada ya kulipa, ingiza namba ya simu uliyotumia kufanya malipo."
-                data-en="After paying, enter the phone number you used to make the payment.">
+                                </span>
 
-                Baada ya kulipa, ingiza namba ya simu uliyotumia kufanya malipo.
+                                <div>
 
-            </div>
+                                    <div class="service-title" data-sw="Maeneo Zaidi" data-en="More Coverage">
 
-            <input type="tel" id="payerPhone" class="payment-input" inputmode="tel" autocomplete="tel" maxlength="16"
-                placeholder="Mfano: 0659840000">
+                                        Maeneo Zaidi
 
-            <button type="button" id="verifyPaymentButton" class="verify-button" onclick="verifyPayment()">
+                                    </div>
 
-                <i class="fa-solid fa-circle-check"></i>
+                                    <div class="service-text" data-sw="Tunaendelea kupanua huduma"
+                                        data-en="We continue expanding coverage">
 
-                <span data-sw="THIBITISHA MALIPO" data-en="VERIFY PAYMENT">
-                    THIBITISHA MALIPO
-                </span>
+                                        Tunaendelea kupanua huduma
 
-            </button>
+                                    </div>
 
-            <div id="paymentStatus" class="status-message hidden">
-            </div>
+                                </div>
 
-        </div>
+                            </div>
 
+                        </div>
 
-        {{-- CASH / VOUCHER --}}
+                    </section>
 
-        <div id="cashVoucherCard" class="card hidden">
 
-            <button type="button" class="back-button" onclick="goHome()">
+                    {{-- ========================================================
+                    MIKROTIK LOGIN FORM
+                    ========================================================= --}}
 
-                <i class="fa-solid fa-arrow-left"></i>
+                    <form id="mikrotikLoginForm" method="post" action="{{ $loginUrl ?: '#' }}" style="display:none">
 
-                <span data-sw="Rudi" data-en="Back">
-                    Rudi
-                </span>
+                        <input type="hidden" name="dst" value="{{ $originalUrl ?? '' }}">
 
-            </button>
+                        <input type="hidden" name="popup" value="true">
 
-            <div class="payment-title" data-sw="CASH / VOUCHER" data-en="CASH / VOUCHER">
-                CASH / VOUCHER
-            </div>
+                        <input type="hidden" id="username" name="username">
 
-            <div class="section-title" data-sw="VIFURUSHI VINAVYOPATIKANA" data-en="AVAILABLE PACKAGES">
-                VIFURUSHI VINAVYOPATIKANA
-            </div>
+                        <input type="hidden" id="password" name="password">
 
-            <table class="package-table">
+                    </form>
 
-                <thead>
-
-                    <tr>
-
-                        <th data-sw="BEI" data-en="PRICE">
-                            BEI
-                        </th>
-
-                        <th data-sw="MUDA" data-en="DURATION">
-                            MUDA
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    <tr>
-                        <td>TZS 200</td>
-
-                        <td data-sw="Dakika 30" data-en="30 Minutes">
-                            Dakika 30
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>TZS 500</td>
-
-                        <td data-sw="Saa 12" data-en="12 Hours">
-                            Saa 12
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>TZS 1,000</td>
-
-                        <td data-sw="Saa 24" data-en="24 Hours">
-                            Saa 24
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>TZS 3,000</td>
-
-                        <td data-sw="Siku 7" data-en="7 Days">
-                            Siku 7
-                        </td>
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-            <div class="reference-note" style="margin-top: 14px;"
-                data-sw="Lipia Cash ofisini kwetu kulingana na kifurushi unachotaka. Utapewa Voucher Code; ingiza voucher hiyo hapa."
-                data-en="Pay cash at our office according to the package you want. You will receive a Voucher Code; enter it below.">
-
-                Lipia Cash ofisini kwetu kulingana na kifurushi unachotaka.
-                Utapewa Voucher Code; ingiza voucher hiyo hapa.
-
-            </div>
-
-            <form id="mikrotikLoginForm" method="post" action="{{ $loginUrl ?: '#' }}"
-                onsubmit="return prepareLogin(event)">
-
-                <input type="hidden" name="dst" value="{{ $originalUrl ?? '' }}">
-
-                <input type="hidden" name="popup" value="true">
-
-                <input type="text" id="voucher" class="voucher-input" placeholder="Ingiza Voucher Code"
-                    autocomplete="off">
-
-                <input type="hidden" id="username" name="username">
-
-                <input type="hidden" id="password" name="password">
-
-                <button type="submit" class="connect-button" {{ $loginUrl ? '' : 'disabled' }}>
-
-                    <i class="fa-solid fa-wifi"></i>
-
-                    <span data-sw="UNGANISHA SASA" data-en="CONNECT NOW">
-                        UNGANISHA SASA
-                    </span>
-
-                </button>
-
-            </form>
-
-        </div>
-
-
-        {{-- DEVICE INFO --}}
-
-        <div class="device-card">
-
-            <div class="device-item">
-
-                <div class="device-label">
-                    MAC Address
-                </div>
-
-                <div class="device-value">
-                    {{ $mac ?: '-' }}
-                </div>
-
-            </div>
-
-            <div class="device-item">
-
-                <div class="device-label">
-                    IP Address
-                </div>
-
-                <div class="device-value">
-                    {{ $ip ?: '-' }}
-                </div>
-
-            </div>
-
-            <div class="device-item">
-
-                <div class="device-label" data-sw="Aina ya Kifaa" data-en="Device Type">
-                    Aina ya Kifaa
-                </div>
-
-                <div class="device-value">
-                    {{ $deviceType ?? '-' }}
                 </div>
 
             </div>
@@ -1217,282 +1799,54 @@
         </div>
 
 
-        <div class="footer">
-            Powered by Jodeka Enterprises Ltd
-        </div>
+        <footer class="footer">
+
+            “JODEKA Hotspot — Intaneti kwa Maisha Bora”
+
+        </footer>
 
     </div>
 
 
     <script>
+
         let currentLanguage = 'sw';
 
-        let selectedAmount = null;
 
-        const loginUrl = @json($loginUrl);
-
-        const deviceMac = @json($mac);
-
-        const deviceIp = @json($ip);
+        const loginUrl =
+            @json($loginUrl);
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | FLOW VISIBILITY
-        |--------------------------------------------------------------------------
-        */
-
-        function hideAllFlows() {
-
-            document
-                .getElementById('phonePackagesCard')
-                .classList
-                .add('hidden');
+        const deviceMac =
+            @json($mac);
 
 
-            document
-                .getElementById('lipaNumberCard')
-                .classList
-                .add('hidden');
-
-
-            document
-                .getElementById('cashVoucherCard')
-                .classList
-                .add('hidden');
-        }
-
-
-        function goHome() {
-
-            hideAllFlows();
-
-
-            document
-                .getElementById('welcomeCard')
-                .classList
-                .remove('hidden');
-
-
-            document
-                .getElementById('mainChoiceCard')
-                .classList
-                .remove('hidden');
-
-
-            selectedAmount = null;
-
-
-            document
-                .querySelectorAll('.package')
-                .forEach(function (element) {
-
-                    element
-                        .classList
-                        .remove('selected');
-                });
-
-
-            document
-                .getElementById('payerPhone')
-                .value = '';
-
-
-            document
-                .getElementById('voucher')
-                .value = '';
-
-
-            clearPaymentStatus();
-
-
-            document
-                .getElementById('verifyPaymentButton')
-                .disabled = false;
-        }
+        const deviceIp =
+            @json($ip);
 
 
         /*
         |--------------------------------------------------------------------------
-        | PHONE PAYMENT
+        | PROCESS INPUT
         |--------------------------------------------------------------------------
         */
 
-        function openPhonePayment() {
-
-            hideAllFlows();
-
-
-            document
-                .getElementById('welcomeCard')
-                .classList
-                .add('hidden');
-
-
-            document
-                .getElementById('mainChoiceCard')
-                .classList
-                .add('hidden');
-
-
-            document
-                .getElementById('phonePackagesCard')
-                .classList
-                .remove('hidden');
-        }
-
-
-        function selectPackage(element) {
-
-            document
-                .querySelectorAll('.package')
-                .forEach(function (packageElement) {
-
-                    packageElement
-                        .classList
-                        .remove('selected');
-                });
-
-
-            element
-                .classList
-                .add('selected');
-
-
-            selectedAmount =
-                Number(element.dataset.amount);
-
-
-            document
-                .getElementById('payAmountText')
-                .textContent =
-                formatMoney(selectedAmount)
-                + ' TZS';
-
-
-            document
-                .getElementById('phonePackagesCard')
-                .classList
-                .add('hidden');
-
-
-            document
-                .getElementById('lipaNumberCard')
-                .classList
-                .remove('hidden');
-
-
-            document
-                .getElementById('payerPhone')
-                .value = '';
-
-
-            clearPaymentStatus();
-
-
-            document
-                .getElementById('verifyPaymentButton')
-                .disabled = false;
-
-
-            setTimeout(function () {
-
+        async function processAccess() {
+            const input =
                 document
-                    .getElementById('payerPhone')
-                    .focus();
-
-            }, 200);
-        }
-
-
-        function backToPackages() {
-
-            document
-                .getElementById('lipaNumberCard')
-                .classList
-                .add('hidden');
-
-
-            document
-                .getElementById('phonePackagesCard')
-                .classList
-                .remove('hidden');
-
-
-            document
-                .getElementById('payerPhone')
-                .value = '';
-
-
-            clearPaymentStatus();
-
-
-            document
-                .getElementById('verifyPaymentButton')
-                .disabled = false;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | CASH / VOUCHER
-        |--------------------------------------------------------------------------
-        */
-
-        function openCashVoucher() {
-
-            hideAllFlows();
-
-
-            document
-                .getElementById('welcomeCard')
-                .classList
-                .add('hidden');
-
-
-            document
-                .getElementById('mainChoiceCard')
-                .classList
-                .add('hidden');
-
-
-            document
-                .getElementById('cashVoucherCard')
-                .classList
-                .remove('hidden');
-
-
-            setTimeout(function () {
-
-                document
-                    .getElementById('voucher')
-                    .focus();
-
-            }, 200);
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | VERIFY PAYMENT
-        |--------------------------------------------------------------------------
-        */
-
-        async function verifyPayment() {
-
-            const payerPhone =
-                document
-                    .getElementById('payerPhone')
+                    .getElementById(
+                        'accessCode'
+                    )
                     .value
                     .trim();
 
 
-            if (!selectedAmount) {
+            if (!input) {
 
-                showPaymentStatus(
+                showStatus(
                     translate(
-                        'Chagua kifurushi kwanza.',
-                        'Please select a package first.'
+                        'Ingiza namba ya simu iliyofanya malipo au Voucher Code.',
+                        'Enter the phone number used for payment or your Voucher Code.'
                     ),
                     'error'
                 );
@@ -1501,12 +1855,63 @@
             }
 
 
-            if (!payerPhone) {
+            const normalizedInput =
+                input
+                    .replace(
+                        /\s+/g,
+                        ''
+                    )
+                    .toUpperCase();
 
-                showPaymentStatus(
+
+            /*
+            |--------------------------------------------------------------------------
+            | VOUCHER
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                /^JDK[A-Z0-9]+$/i.test(
+                    normalizedInput
+                )
+            ) {
+
+                disableButton();
+
+                showStatus(
                     translate(
-                        'Ingiza namba ya simu uliyotumia kulipia.',
-                        'Enter the phone number you used to make the payment.'
+                        'Inaunganisha kwa voucher...',
+                        'Connecting using voucher...'
+                    ),
+                    'info'
+                );
+
+                loginWithVoucher(
+                    normalizedInput
+                );
+
+                return;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | PHONE
+            |--------------------------------------------------------------------------
+            */
+
+            const phone =
+                normalizePhoneInput(
+                    normalizedInput
+                );
+
+
+            if (!phone) {
+
+                showStatus(
+                    translate(
+                        'Namba ya simu au Voucher Code uliyoingiza si sahihi.',
+                        'The phone number or Voucher Code you entered is invalid.'
                     ),
                     'error'
                 );
@@ -1515,32 +1920,28 @@
             }
 
 
-            if (!deviceMac) {
-
-                showPaymentStatus(
-                    translate(
-                        'MAC Address ya kifaa haijapatikana. Fungua portal kupitia JODEKA WiFi.',
-                        'Device MAC Address was not received. Open this portal through JODEKA WiFi.'
-                    ),
-                    'error'
-                );
-
-                return;
-            }
+            await verifyPhonePayment(
+                phone
+            );
+        }
 
 
-            const button =
-                document
-                    .getElementById('verifyPaymentButton');
+        /*
+        |--------------------------------------------------------------------------
+        | VERIFY PHONE PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
+        async function verifyPhonePayment(
+            phone
+        ) {
+            disableButton();
 
 
-            button.disabled = true;
-
-
-            showPaymentStatus(
+            showStatus(
                 translate(
-                    'Inathibitisha malipo...',
-                    'Verifying payment...'
+                    'Inatafuta na kuthibitisha malipo yako...',
+                    'Searching for and verifying your payment...'
                 ),
                 'info'
             );
@@ -1552,22 +1953,31 @@
                     await fetch(
                         '/api/hotspot/payments/verify',
                         {
-                            method: 'POST',
+                            method:
+                                'POST',
 
                             headers: {
+
                                 'Content-Type':
                                     'application/json',
 
                                 'Accept':
                                     'application/json'
+
                             },
 
                             body:
                                 JSON.stringify({
-                                    payer_phone: payerPhone,
-                                    amount: selectedAmount,
-                                    mac: deviceMac,
-                                    ip: deviceIp
+
+                                    payer_phone:
+                                        phone,
+
+                                    mac:
+                                        deviceMac,
+
+                                    ip:
+                                        deviceIp
+
                                 })
                         }
                     );
@@ -1588,8 +1998,7 @@
 
 
                 if (
-                    !response.ok
-                    ||
+                    !response.ok ||
                     !data.success
                 ) {
 
@@ -1608,151 +2017,218 @@
 
                     throw new Error(
                         translate(
-                            'Malipo yamethibitishwa lakini voucher haijapatikana.',
-                            'Payment was verified but the voucher was not found.'
+                            'Malipo yamethibitishwa lakini Voucher Code haijapatikana.',
+                            'Payment was verified but the Voucher Code was not found.'
                         )
                     );
                 }
 
 
-                showPaymentStatus(
+                showStatus(
                     translate(
-                        'Malipo yamethibitishwa. Inaunganisha internet...',
+                        'Malipo yamethibitishwa. Inaunganisha intaneti...',
                         'Payment verified. Connecting to the internet...'
                     ),
                     'success'
                 );
 
 
-                setTimeout(function () {
+                setTimeout(
+                    function () {
 
-                    loginWithVoucher(
-                        data.voucher
-                    );
+                        loginWithVoucher(
+                            data.voucher
+                        );
 
-                }, 700);
+                    },
+                    500
+                );
 
 
             } catch (error) {
 
-                showPaymentStatus(
-                    error.message,
-                    'error'
-                );
-
-
-                button.disabled = false;
-            }
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | AUTO LOGIN
-        |--------------------------------------------------------------------------
-        */
-
-        function loginWithVoucher(voucherCode) {
-
-            const voucher =
-                String(voucherCode)
-                    .trim()
-                    .toUpperCase();
-
-
-            if (!voucher) {
-                return;
-            }
-
-
-            if (!loginUrl) {
-
-                showPaymentStatus(
+                showStatus(
+                    error.message
+                    ||
                     translate(
-                        'MikroTik login URL haijapatikana.',
-                        'MikroTik login URL was not received.'
+                        'Imeshindikana kuthibitisha malipo.',
+                        'Unable to verify payment.'
                     ),
                     'error'
                 );
 
 
-                document
-                    .getElementById('verifyPaymentButton')
-                    .disabled = false;
+                enableButton();
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOGIN WITH VOUCHER
+        |--------------------------------------------------------------------------
+        */
+
+        function loginWithVoucher(
+            voucherCode
+        ) {
+            const voucher =
+                String(
+                    voucherCode
+                )
+                    .trim()
+                    .replace(
+                        /\s+/g,
+                        ''
+                    )
+                    .toUpperCase();
+
+
+            if (!voucher) {
+
+                showStatus(
+                    translate(
+                        'Voucher Code haijapatikana.',
+                        'Voucher Code was not found.'
+                    ),
+                    'error'
+                );
+
+                enableButton();
+
+                return;
+            }
+
+
+            if (!loginUrl) {
+
+                showStatus(
+                    translate(
+                        'MikroTik login URL haijapatikana. Fungua ukurasa kupitia Jodeka Hotspot.',
+                        'MikroTik login URL was not received. Open this page through Jodeka Hotspot.'
+                    ),
+                    'error'
+                );
+
+
+                enableButton();
 
                 return;
             }
 
 
             document
-                .getElementById('voucher')
-                .value = voucher;
+                .getElementById(
+                    'username'
+                )
+                .value =
+                voucher;
 
 
             document
-                .getElementById('username')
-                .value = voucher;
+                .getElementById(
+                    'password'
+                )
+                .value =
+                voucher;
 
 
-            document
-                .getElementById('password')
-                .value = voucher;
+            showStatus(
+                translate(
+                    'Inaunganisha intaneti...',
+                    'Connecting to the internet...'
+                ),
+                'success'
+            );
 
 
-            document
-                .getElementById('mikrotikLoginForm')
-                .submit();
+            setTimeout(
+                function () {
+
+                    document
+                        .getElementById(
+                            'mikrotikLoginForm'
+                        )
+                        .submit();
+
+                },
+                250
+            );
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | MANUAL VOUCHER LOGIN
+        | NORMALIZE PHONE
         |--------------------------------------------------------------------------
         */
 
-        function prepareLogin(event) {
+        function normalizePhoneInput(
+            value
+        ) {
+            let phone =
+                String(
+                    value
+                )
+                    .replace(
+                        /[^\d+]/g,
+                        ''
+                    );
 
-            if (!loginUrl) {
 
-                event.preventDefault();
+            if (
+                phone.startsWith(
+                    '+255'
+                )
+            ) {
 
-                return false;
+                phone =
+                    '0'
+                    +
+                    phone.substring(
+                        4
+                    );
             }
 
 
-            const voucher =
-                document
-                    .getElementById('voucher')
-                    .value
-                    .trim()
-                    .toUpperCase();
+            if (
+                phone.startsWith(
+                    '255'
+                )
+                &&
+                phone.length === 12
+            ) {
 
-
-            if (!voucher) {
-
-                event.preventDefault();
-
-                return false;
+                phone =
+                    '0'
+                    +
+                    phone.substring(
+                        3
+                    );
             }
 
 
-            document
-                .getElementById('voucher')
-                .value = voucher;
+            if (
+                /^0\d{9}$/.test(
+                    phone
+                )
+            ) {
+
+                return phone;
+            }
 
 
-            document
-                .getElementById('username')
-                .value = voucher;
+            if (
+                /^\d{9}$/.test(
+                    phone
+                )
+            ) {
+
+                return '0' + phone;
+            }
 
 
-            document
-                .getElementById('password')
-                .value = voucher;
-
-
-            return true;
+            return null;
         }
 
 
@@ -1762,36 +2238,68 @@
         |--------------------------------------------------------------------------
         */
 
-        function showPaymentStatus(
+        function showStatus(
             message,
             type
         ) {
-
-            const status =
+            const element =
                 document
-                    .getElementById('paymentStatus');
+                    .getElementById(
+                        'statusMessage'
+                    );
 
 
-            status.textContent =
+            element.textContent =
                 message;
 
 
-            status.className =
-                'status-message ' + type;
+            element.className =
+                'status-message '
+                +
+                type;
         }
 
 
-        function clearPaymentStatus() {
-
-            const status =
+        function clearStatus() {
+            const element =
                 document
-                    .getElementById('paymentStatus');
+                    .getElementById(
+                        'statusMessage'
+                    );
 
 
-            status.textContent = '';
+            element.textContent =
+                '';
 
-            status.className =
+
+            element.className =
                 'status-message hidden';
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BUTTON
+        |--------------------------------------------------------------------------
+        */
+
+        function disableButton() {
+            document
+                .getElementById(
+                    'connectButton'
+                )
+                .disabled =
+                true;
+        }
+
+
+        function enableButton() {
+            document
+                .getElementById(
+                    'connectButton'
+                )
+                .disabled =
+                false;
         }
 
 
@@ -1801,61 +2309,65 @@
         |--------------------------------------------------------------------------
         */
 
-        function setLanguage(language) {
-
+        function setLanguage(
+            language
+        ) {
             currentLanguage =
                 language;
 
 
             document
-                .querySelectorAll('[data-sw][data-en]')
-                .forEach(function (element) {
+                .querySelectorAll(
+                    '[data-sw][data-en]'
+                )
+                .forEach(
+                    function (element) {
 
-                    element.textContent =
-                        element.dataset[language];
-                });
+                        element.textContent =
+                            element.dataset[
+                            language
+                            ];
+                    }
+                );
 
 
-            const voucherInput =
+            const input =
                 document
-                    .getElementById('voucher');
+                    .getElementById(
+                        'accessCode'
+                    );
 
 
-            const phoneInput =
+            if (
+                language === 'sw'
+            ) {
+
+                input.placeholder =
+                    'Mfano: 0659840000 au JDK34587';
+
+
                 document
-                    .getElementById('payerPhone');
-
-
-            if (language === 'sw') {
-
-                voucherInput.placeholder =
-                    'Ingiza Voucher Code';
-
-
-                phoneInput.placeholder =
-                    'Mfano: 0659840000';
-
-
-                document.documentElement.lang =
+                    .documentElement
+                    .lang =
                     'sw';
 
             } else {
 
-                voucherInput.placeholder =
-                    'Enter Voucher Code';
+                input.placeholder =
+                    'Example: 0659840000 or JDK34587';
 
 
-                phoneInput.placeholder =
-                    'Example: 0659840000';
-
-
-                document.documentElement.lang =
+                document
+                    .documentElement
+                    .lang =
                     'en';
             }
 
 
             document
-                .getElementById('swButton')
+                .getElementById(
+                    'swButton'
+                )
                 .classList
                 .toggle(
                     'active',
@@ -1864,7 +2376,9 @@
 
 
             document
-                .getElementById('enButton')
+                .getElementById(
+                    'enButton'
+                )
                 .classList
                 .toggle(
                     'active',
@@ -1875,26 +2389,78 @@
 
         /*
         |--------------------------------------------------------------------------
-        | HELPERS
+        | TRANSLATION
         |--------------------------------------------------------------------------
         */
 
-        function translate(sw, en) {
-
+        function translate(
+            sw,
+            en
+        ) {
             return currentLanguage === 'sw'
                 ? sw
                 : en;
         }
 
 
-        function formatMoney(amount) {
+        /*
+        |--------------------------------------------------------------------------
+        | ENTER KEY
+        |--------------------------------------------------------------------------
+        */
 
-            return Number(amount)
-                .toLocaleString('en-US');
-        }
+        document
+            .getElementById(
+                'accessCode'
+            )
+            .addEventListener(
+                'keydown',
+                function (event) {
+
+                    if (
+                        event.key ===
+                        'Enter'
+                    ) {
+
+                        event.preventDefault();
+
+                        processAccess();
+                    }
+                }
+            );
 
 
-        setLanguage('sw');
+        /*
+        |--------------------------------------------------------------------------
+        | INPUT CHANGE
+        |--------------------------------------------------------------------------
+        */
+
+        document
+            .getElementById(
+                'accessCode'
+            )
+            .addEventListener(
+                'input',
+                function () {
+
+                    clearStatus();
+
+                    enableButton();
+                }
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | INITIAL LANGUAGE
+        |--------------------------------------------------------------------------
+        */
+
+        setLanguage(
+            'sw'
+        );
+
     </script>
 
 </body>
