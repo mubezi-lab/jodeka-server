@@ -40,6 +40,7 @@ use App\Http\Controllers\WifiPortalController;
 
 use App\Http\Controllers\DailyCashEntryController;
 
+
 /*
 |--------------------------------------------------------------------------
 | BAGAMBAKAMO CONTROLLERS
@@ -53,6 +54,7 @@ use App\Http\Controllers\Bagambakamo\EventController as BagambakamoEventControll
 use App\Http\Controllers\Bagambakamo\ReportController as BagambakamoReportController;
 use App\Http\Controllers\Bagambakamo\SmsController as BagambakamoSmsController;
 use App\Http\Controllers\Bagambakamo\SmsReportController as BagambakamoSmsReportController;
+use App\Http\Controllers\Bagambakamo\PendingTransactionController as BagambakamoPendingTransactionController;
 
 
 /*
@@ -78,30 +80,6 @@ Route::get('/', function () {
 | to authenticate with the JODEKA admin system.
 |
 */
-
-/*
-|--------------------------------------------------------------------------
-| PHP / GD TEST - TEMPORARY
-|--------------------------------------------------------------------------
-|
-| Temporary route used to confirm that the PHP process serving Laravel
-| has loaded the GD extension required by DomPDF.
-|
-*/
-
-Route::get('/gd-test', function () {
-
-    return response()->json([
-        'php_version' => PHP_VERSION,
-        'php_binary' => PHP_BINARY,
-        'php_ini' => php_ini_loaded_file(),
-        'gd_loaded' => extension_loaded('gd'),
-        'gd_info' => extension_loaded('gd')
-            ? gd_info()
-            : null,
-    ]);
-
-})->name('gd.test');
 
 Route::get('/wifi', [
     WifiPortalController::class,
@@ -512,6 +490,30 @@ Route::middleware([
 
             /*
             |--------------------------------------------------------------------------
+            | BAGAMBAKAMO PENDING M-KOBA TRANSACTIONS
+            |--------------------------------------------------------------------------
+            */
+
+            Route::post(
+                '/pending-transactions/{pendingTransaction}/event',
+                [
+                    BagambakamoPendingTransactionController::class,
+                    'storeEvent'
+                ]
+            )->name('pending-transactions.event');
+
+
+            Route::post(
+                '/pending-transactions/{pendingTransaction}/expense',
+                [
+                    BagambakamoPendingTransactionController::class,
+                    'storeExpense'
+                ]
+            )->name('pending-transactions.expense');
+
+
+            /*
+            |--------------------------------------------------------------------------
             | BAGAMBAKAMO REPORTS
             |--------------------------------------------------------------------------
             */
@@ -571,17 +573,13 @@ Route::middleware([
     */
 
     Route::get('/savings/{saving}/deposit', [
-
         SavingController::class,
         'depositForm'
-
     ])->name('savings.deposit.form');
 
     Route::post('/savings/{saving}/deposit', [
-
         SavingController::class,
         'depositStore'
-
     ])->name('savings.deposit.store');
 
 
@@ -592,17 +590,13 @@ Route::middleware([
     */
 
     Route::get('/savings/{saving}/withdraw', [
-
         SavingController::class,
         'withdrawForm'
-
     ])->name('savings.withdraw.form');
 
     Route::post('/savings/{saving}/withdraw', [
-
         SavingController::class,
         'withdrawStore'
-
     ])->name('savings.withdraw.store');
 
 
@@ -706,35 +700,15 @@ Route::middleware([
     'role:employee'
 ])->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | STENDI DASHBOARD
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/stendi', [
         ToiletAttendantController::class,
         'dashboard'
     ])->name('stendi.dashboard');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | SOKONI DASHBOARD
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/sokoni', [
         ToiletAttendantController::class,
         'dashboard'
     ])->name('sokoni.dashboard');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | STENDI ADD ENTRY
-    |--------------------------------------------------------------------------
-    */
 
     Route::get('/stendi/add-entry', [
         ToiletAttendantController::class,
@@ -746,13 +720,6 @@ Route::middleware([
         'storeEntry'
     ])->name('stendi.entry.store');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | SOKONI ADD ENTRY
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/sokoni/add-entry', [
         ToiletAttendantController::class,
         'createEntry'
@@ -763,114 +730,50 @@ Route::middleware([
         'storeEntry'
     ])->name('sokoni.entry.store');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | STENDI EXPENSES
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/stendi/expenses', [
         ToiletAttendantController::class,
         'expenses'
     ])->name('stendi.expenses');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SOKONI EXPENSES
-    |--------------------------------------------------------------------------
-    */
 
     Route::get('/sokoni/expenses', [
         ToiletAttendantController::class,
         'expenses'
     ])->name('sokoni.expenses');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | STORE TOILET EXPENSE
-    |--------------------------------------------------------------------------
-    */
-
     Route::post('/expense/store/{entry_date?}', [
         ToiletAttendantController::class,
         'storeExpense'
     ])->name('expense.store');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE TOILET EXPENSE
-    |--------------------------------------------------------------------------
-    */
 
     Route::put('/expense/update/{id}', [
         ToiletAttendantController::class,
         'updateExpense'
     ])->name('expense.update');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | DELETE TOILET EXPENSE
-    |--------------------------------------------------------------------------
-    */
-
     Route::delete('/expense/delete/{id}', [
         ToiletAttendantController::class,
         'deleteExpense'
     ])->name('expense.delete');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE DAILY ENTRY
-    |--------------------------------------------------------------------------
-    */
 
     Route::put('/entry/update/{id}', [
         ToiletAttendantController::class,
         'updateEntry'
     ])->name('entry.update');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | STENDI REPORTS
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/stendi/reports', [
         ToiletAttendantController::class,
         'reports'
     ])->name('stendi.reports');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SOKONI REPORTS
-    |--------------------------------------------------------------------------
-    */
 
     Route::get('/sokoni/reports', [
         ToiletAttendantController::class,
         'reports'
     ])->name('sokoni.reports');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE DAILY ENTRY BALANCES
-    |--------------------------------------------------------------------------
-    */
-
     Route::put('/daily-entry/update/{id}', [
         ToiletDailyEntryController::class,
         'update'
     ])->name('daily-entry.update');
-
 });
 
 
@@ -899,7 +802,6 @@ Route::middleware([
         DailyCashEntryController::class,
         'store'
     ])->name('daily-cash.store');
-
 });
 
 

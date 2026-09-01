@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\StockApiController;
 use App\Http\Controllers\Api\LivestockApiController;
 use App\Http\Controllers\Api\LoanApiController;
 use App\Http\Controllers\Api\SavingApiController;
+use App\Http\Controllers\Api\BagambakamoSmsController;
+
 use App\Http\Controllers\HotspotPaymentSmsController;
 use App\Http\Controllers\HotspotPaymentVerificationController;
 
@@ -39,6 +41,24 @@ Route::post('/hotspot/payments/sms', [
 
 /*
 |--------------------------------------------------------------------------
+| BAGAMBAKAMO M-KOBA SMS
+|--------------------------------------------------------------------------
+|
+| Receives BAGAMBA KAMO SMS messages forwarded from the SMS Forwarder app.
+| Laravel automatically adds the /api prefix to this route.
+|
+| Final URL:
+| /api/bagambakamo/sms
+|
+*/
+
+Route::post('/bagambakamo/sms', [
+    BagambakamoSmsController::class,
+    'store'
+]);
+
+/*
+|--------------------------------------------------------------------------
 | HOTSPOT PAYMENT VERIFICATION
 |--------------------------------------------------------------------------
 |
@@ -58,7 +78,10 @@ Route::post('/hotspot/payments/verify', [
 |--------------------------------------------------------------------------
 */
 
-Route::post('/login', [AuthApiController::class, 'login']);
+Route::post('/login', [
+    AuthApiController::class,
+    'login'
+]);
 
 /*
 |--------------------------------------------------------------------------
@@ -68,20 +91,44 @@ Route::post('/login', [AuthApiController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    Route::get('/user', [AuthApiController::class, 'user']);
+    Route::get('/user', [
+        AuthApiController::class,
+        'user'
+    ]);
 
-    Route::post('/logout', [AuthApiController::class, 'logout']);
+    Route::post('/logout', [
+        AuthApiController::class,
+        'logout'
+    ]);
 
-    Route::get('/dashboard', [DashboardApiController::class, 'index']);
+    Route::get('/dashboard', [
+        DashboardApiController::class,
+        'index'
+    ]);
 
-    Route::get('/products', [ProductApiController::class, 'index']);
+    Route::get('/products', [
+        ProductApiController::class,
+        'index'
+    ]);
 
-    Route::get('/stocks', [StockApiController::class, 'index']);
+    Route::get('/stocks', [
+        StockApiController::class,
+        'index'
+    ]);
 
-    Route::get('/livestocks', [LivestockApiController::class, 'index']);
+    Route::get('/livestocks', [
+        LivestockApiController::class,
+        'index'
+    ]);
 
-    Route::get('/loans', [LoanApiController::class, 'index']);
+    Route::get('/loans', [
+        LoanApiController::class,
+        'index'
+    ]);
 
-    Route::get('/savings', [SavingApiController::class, 'index']);
+    Route::get('/savings', [
+        SavingApiController::class,
+        'index'
+    ]);
 
 });

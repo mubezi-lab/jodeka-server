@@ -35,8 +35,33 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | HOTSPOT SMS
+    |--------------------------------------------------------------------------
+    */
+
     'hotspot_sms' => [
         'api_key' => env('HOTSPOT_SMS_API_KEY'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | BEEM SMS
+    |--------------------------------------------------------------------------
+    |
+    | Used by Bagambakamo for sending SMS messages to members.
+    |
+    */
+
+    'beem' => [
+        'api_key' => env('BEEM_API_KEY'),
+        'secret_key' => env('BEEM_SECRET_KEY'),
+        'sender' => env('BEEM_SENDER'),
+    ],
+
+    'bagambakamo' => [
+        'forwarder_member_id' => env('BAGAMBAKAMO_FORWARDER_MEMBER_ID'),
     ],
 
 ];
