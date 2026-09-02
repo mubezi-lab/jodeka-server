@@ -583,6 +583,8 @@
     'company-incomes.*',
     'savings.*',
     'loans.*',
+    'customers.*',
+    'debts.*',
     'reports.*'
 ) ? '' : 'hidden' }}
                         mt-2 space-y-2 pl-3">
@@ -687,6 +689,28 @@
                                 Loans
                             </span>
 
+                        </a>
+
+                        {{-- CUSTOMERS --}}
+                        <a href="{{ route('customers.index') }}" class="flex items-center gap-3
+                                   px-4 py-2 rounded-lg transition
+                                   {{ request()->routeIs('customers.*')
+    ? 'bg-indigo-600 text-white'
+    : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+
+                            <i class="fa-solid fa-users w-5 text-center text-sm"></i>
+                            <span>Customers</span>
+                        </a>
+
+                        {{-- GENERAL DEBTS --}}
+                        <a href="{{ route('debts.index') }}" class="flex items-center gap-3
+                                   px-4 py-2 rounded-lg transition
+                                   {{ request()->routeIs('debts.*')
+    ? 'bg-indigo-600 text-white'
+    : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+
+                            <i class="fa-solid fa-file-invoice-dollar w-5 text-center text-sm"></i>
+                            <span>Customer Debts</span>
                         </a>
 
 

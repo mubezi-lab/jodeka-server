@@ -39,6 +39,9 @@ use App\Http\Controllers\HotspotVoucherController;
 use App\Http\Controllers\WifiPortalController;
 
 use App\Http\Controllers\DailyCashEntryController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DebtController;
+use App\Http\Controllers\DebtPaymentController;
 
 
 /*
@@ -103,6 +106,25 @@ Route::middleware([
         DashboardController::class,
         'index'
     ])->name('dashboard');
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| CUSTOMERS AND GENERAL DEBTS
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:admin,manager,employee'])->group(function () {
+    Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
+
+    Route::get('/debts', [DebtController::class, 'index'])->name('debts.index');
+    Route::get('/debts/create', [DebtController::class, 'create'])->name('debts.create');
+    Route::post('/debts', [DebtController::class, 'store'])->name('debts.store');
+    Route::get('/debts/{debt}', [DebtController::class, 'show'])->name('debts.show');
+    Route::post('/debts/{debt}/payments', [DebtPaymentController::class, 'store'])
+        ->name('debts.payments.store');
 });
 
 
