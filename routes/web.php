@@ -44,6 +44,7 @@ use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtPaymentController;
 use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\FinancialAccountTransferController;
+use App\Http\Controllers\ProcurementController;
 
 
 /*
@@ -144,6 +145,18 @@ Route::middleware(['auth', 'role:admin,manager,employee'])->group(function () {
 Route::middleware(['auth', 'role:admin,manager'])->group(function () {
     Route::post('/financial-account-transfers/{transfer}/confirm', [FinancialAccountTransferController::class, 'confirm'])->name('financial-account-transfers.confirm');
     Route::post('/financial-account-transfers/{transfer}/reject', [FinancialAccountTransferController::class, 'reject'])->name('financial-account-transfers.reject');
+});
+
+Route::middleware(['auth', 'role:admin,manager,employee'])->group(function () {
+    Route::get('/procurement', [ProcurementController::class, 'index'])->name('procurement.index');
+    Route::post('/procurement/requests', [ProcurementController::class, 'storeRequest'])->name('procurement.requests.store');
+    Route::get('/procurement/requests/{stockRequest}', [ProcurementController::class, 'show'])->name('procurement.requests.show');
+    Route::post('/procurement/orders/{purchaseOrder}/receive', [ProcurementController::class, 'receive'])->name('procurement.orders.receive');
+});
+
+Route::middleware(['auth', 'role:admin,manager'])->group(function () {
+    Route::post('/procurement/requests/{stockRequest}/review', [ProcurementController::class, 'review'])->name('procurement.requests.review');
+    Route::post('/procurement/requests/{stockRequest}/order', [ProcurementController::class, 'order'])->name('procurement.requests.order');
 });
 
 

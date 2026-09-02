@@ -187,10 +187,18 @@
                     <div id="inventoryMenu" class="{{ request()->routeIs(
     'products.*',
     'stocks.*',
-    'purchases.*'
+    'purchases.*',
+    'procurement.*'
 ) ? '' : 'hidden' }}
                         mt-2 space-y-2 pl-3">
 
+
+                        {{-- PRODUCTS --}}
+                        <a href="{{ route('procurement.index') }}" class="flex items-center gap-3 px-4 py-2 rounded-lg transition
+                                   {{ request()->routeIs('procurement.*') ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+                            <i class="fa-solid fa-clipboard-list w-5 text-center text-sm"></i>
+                            <span>Stock Requests</span>
+                        </a>
 
                         {{-- PRODUCTS --}}
                         <a href="{{ route('products.index') }}" class="flex items-center gap-3
