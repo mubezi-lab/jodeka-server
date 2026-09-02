@@ -18,6 +18,13 @@ class Business extends Model
         return $this->hasMany(User::class);
     }
 
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class)
+            ->withPivot(['access_level', 'is_primary', 'is_active'])
+            ->withTimestamps();
+    }
+
     // relationship with products
     public function products()
     {
@@ -38,5 +45,15 @@ class Business extends Model
     public function fixedExpenses()
     {
         return $this->hasMany(FixedExpense::class);
+    }
+
+    public function financialAccounts()
+    {
+        return $this->hasMany(FinancialAccount::class);
+    }
+
+    public function journals()
+    {
+        return $this->hasMany(Journal::class);
     }
 }

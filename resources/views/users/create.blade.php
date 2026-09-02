@@ -100,63 +100,28 @@
 
                     </div>
 
-                    {{-- BUSINESS --}}
+                    {{-- BUSINESSES --}}
                     <div class="mb-4">
 
                         <label class="block text-sm mb-1">
-                            Business
+                            Businesses / Branches
                         </label>
 
-                        <select id="businessSelect"
-                                name="business_id"
-                                class="w-full border rounded-lg px-3 py-2">
-
-                            <option value="">
-                                -- Select Business --
-                            </option>
-
+                        <div class="border rounded-lg p-3 space-y-2">
                             @foreach ($businesses as $business)
-
-                                <option value="{{ $business->id }}"
-                                        data-name="{{ strtolower($business->name) }}">
-
-                                    {{ $business->name }}
-
-                                </option>
-
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox"
+                                           name="business_ids[]"
+                                           value="{{ $business->id }}"
+                                           @checked(in_array($business->id, old('business_ids', [])))
+                                           class="rounded border-gray-300">
+                                    <span>{{ $business->name }}</span>
+                                </label>
                             @endforeach
-
-                        </select>
-
-                    </div>
-
-                    {{-- TOILET SELECT --}}
-                    <div id="toiletWrapper" class="mb-6 hidden">
-
-                        <label class="block text-sm mb-1">
-                            Toilet Type
-                        </label>
-
-                        <select name="toilet_id"
-                                class="w-full border rounded-lg px-3 py-2">
-
-                            <option value="">
-                                -- Select Toilet --
-                            </option>
-
-                            @foreach ($toilets as $toilet)
-
-                                <option value="{{ $toilet->id }}">
-
-                                    {{ $toilet->name }}
-                                    ({{ ucfirst($toilet->type) }})
-
-                                </option>
-
-                            @endforeach
-
-                        </select>
-
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">
+                            The first selected branch remains the primary branch for older modules.
+                        </p>
                     </div>
 
                     {{-- BUTTON --}}
@@ -174,30 +139,5 @@
         </div>
 
     </div>
-
-    {{-- SCRIPT --}}
-    <script>
-
-        const businessSelect = document.getElementById('businessSelect');
-        const toiletWrapper = document.getElementById('toiletWrapper');
-
-        businessSelect.addEventListener('change', function () {
-
-            const selected =
-                this.options[this.selectedIndex].dataset.name;
-
-            if (selected === 'public toilet') {
-
-                toiletWrapper.classList.remove('hidden');
-
-            } else {
-
-                toiletWrapper.classList.add('hidden');
-
-            }
-
-        });
-
-    </script>
 
 </x-app-layout>

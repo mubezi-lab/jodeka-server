@@ -37,7 +37,7 @@
                         <th class="p-3 text-left">Role</th>
 
                         <th class="p-3 text-left">
-                            Business
+                            Businesses / Branches
                         </th>
 
                         <th class="p-3 text-left">Actions</th>
@@ -69,7 +69,7 @@
                             </td>
 
                             <td class="p-3 whitespace-nowrap">
-                                {{ $user->business->name ?? '-' }}
+                                {{ $user->businesses->pluck('name')->join(', ') ?: ($user->business->name ?? '-') }}
                             </td>
 
                             <td class="p-3">

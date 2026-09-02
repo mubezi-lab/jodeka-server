@@ -63,6 +63,13 @@ class User extends Authenticatable
         return $this->belongsTo(Business::class);
     }
 
+    public function businesses()
+    {
+        return $this->belongsToMany(Business::class)
+            ->withPivot(['access_level', 'is_primary', 'is_active'])
+            ->withTimestamps();
+    }
+
     public function toilet()
     {
         return $this->hasOne(Toilet::class);

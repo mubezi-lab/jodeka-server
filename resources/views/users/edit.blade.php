@@ -45,28 +45,38 @@
                         <label class="block text-sm mb-1">Role</label>
                         <select name="role" class="w-full border rounded p-2" required>
 
-                            <option value="1" {{ $user->role_id == 1 ? 'selected' : '' }}>Admin</option>
-                            <option value="2" {{ $user->role_id == 2 ? 'selected' : '' }}>Manager</option>
-                            <option value="3" {{ $user->role_id == 3 ? 'selected' : '' }}>Employee</option>
-
+                            @foreach ($roles as $role)
+                                <option value="{{ $role->id }}" @selected(old('role', $user->role_id) == $role->id)>
+                                    {{ ucfirst($role->name) }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
 
-                    <!-- BUSINESS -->
+                    <!-- BUSINESSES -->
                     <div class="mb-4">
-                        <label class="block text-sm mb-1">Business</label>
-                        <select name="business_id" class="w-full border rounded p-2">
-
-                            <option value="">-- Select Business --</option>
-
+                        <label class="block text-sm mb-1">Businesses / Branches</label>
+                        @php
+                            $selectedBusinesses = old(
+                                'business_ids',
+                                $user->businesses->pluck('id')->all() ?: array_filter([$user->business_id])
+                            );
+                        @endphp
+                        <div class="border rounded p-3 space-y-2">
                             @foreach($businesses as $business)
-                                <option value="{{ $business->id }}"
-                                    {{ $user->business_id == $business->id ? 'selected' : '' }}>
-                                    {{ $business->name }}
-                                </option>
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox"
+                                           name="business_ids[]"
+                                           value="{{ $business->id }}"
+                                           @checked(in_array($business->id, $selectedBusinesses))
+                                           class="rounded border-gray-300">
+                                    <span>{{ $business->name }}</span>
+                                </label>
                             @endforeach
-
-                        </select>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">
+                            The first selected branch is used as primary by older modules.
+                        </p>
                     </div>
 
                     <!-- BUTTON -->

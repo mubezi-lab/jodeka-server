@@ -21,7 +21,8 @@ class AuthApiController extends Controller
 
         $user = User::with([
             'role',
-            'business'
+            'business',
+            'businesses'
         ])->where(
             'email',
             $request->email
@@ -64,7 +65,8 @@ class AuthApiController extends Controller
             'success' => true,
             'user'    => $request->user()->load([
                 'role',
-                'business'
+                'business',
+                'businesses'
             ]),
         ]);
     }
