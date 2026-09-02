@@ -42,6 +42,8 @@ use App\Http\Controllers\DailyCashEntryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtPaymentController;
+use App\Http\Controllers\FinancialAccountController;
+use App\Http\Controllers\FinancialAccountTransferController;
 
 
 /*
@@ -125,6 +127,23 @@ Route::middleware(['auth', 'role:admin,manager,employee'])->group(function () {
     Route::get('/debts/{debt}', [DebtController::class, 'show'])->name('debts.show');
     Route::post('/debts/{debt}/payments', [DebtPaymentController::class, 'store'])
         ->name('debts.payments.store');
+});
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/financial-accounts', [FinancialAccountController::class, 'index'])->name('financial-accounts.index');
+    Route::post('/financial-accounts', [FinancialAccountController::class, 'store'])->name('financial-accounts.store');
+    Route::put('/financial-accounts/{financialAccount}', [FinancialAccountController::class, 'update'])->name('financial-accounts.update');
+    Route::patch('/financial-accounts/{financialAccount}/toggle', [FinancialAccountController::class, 'toggle'])->name('financial-accounts.toggle');
+});
+
+Route::middleware(['auth', 'role:admin,manager,employee'])->group(function () {
+    Route::get('/financial-account-transfers', [FinancialAccountTransferController::class, 'index'])->name('financial-account-transfers.index');
+    Route::post('/financial-account-transfers', [FinancialAccountTransferController::class, 'store'])->name('financial-account-transfers.store');
+});
+
+Route::middleware(['auth', 'role:admin,manager'])->group(function () {
+    Route::post('/financial-account-transfers/{transfer}/confirm', [FinancialAccountTransferController::class, 'confirm'])->name('financial-account-transfers.confirm');
+    Route::post('/financial-account-transfers/{transfer}/reject', [FinancialAccountTransferController::class, 'reject'])->name('financial-account-transfers.reject');
 });
 
 

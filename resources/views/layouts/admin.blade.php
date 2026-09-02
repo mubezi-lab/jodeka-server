@@ -585,6 +585,8 @@
     'loans.*',
     'customers.*',
     'debts.*',
+    'financial-accounts.*',
+    'financial-account-transfers.*',
     'reports.*'
 ) ? '' : 'hidden' }}
                         mt-2 space-y-2 pl-3">
@@ -711,6 +713,26 @@
 
                             <i class="fa-solid fa-file-invoice-dollar w-5 text-center text-sm"></i>
                             <span>Customer Debts</span>
+                        </a>
+
+                        {{-- FINANCIAL ACCOUNTS --}}
+                        <a href="{{ route('financial-accounts.index') }}" class="flex items-center gap-3
+                                   px-4 py-2 rounded-lg transition
+                                   {{ request()->routeIs('financial-accounts.*')
+    ? 'bg-indigo-600 text-white'
+    : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+                            <i class="fa-solid fa-building-columns w-5 text-center text-sm"></i>
+                            <span>Financial Accounts</span>
+                        </a>
+
+                        {{-- CASH HANDOVERS --}}
+                        <a href="{{ route('financial-account-transfers.index') }}" class="flex items-center gap-3
+                                   px-4 py-2 rounded-lg transition
+                                   {{ request()->routeIs('financial-account-transfers.*')
+    ? 'bg-indigo-600 text-white'
+    : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+                            <i class="fa-solid fa-right-left w-5 text-center text-sm"></i>
+                            <span>Cash Handovers</span>
                         </a>
 
 

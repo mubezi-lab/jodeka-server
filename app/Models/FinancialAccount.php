@@ -35,4 +35,23 @@ class FinancialAccount extends Model
     {
         return $this->hasMany(JournalEntry::class);
     }
+
+    public function outgoingTransfers()
+    {
+        return $this->hasMany(FinancialAccountTransfer::class, 'from_financial_account_id');
+    }
+
+    public function incomingTransfers()
+    {
+        return $this->hasMany(FinancialAccountTransfer::class, 'to_financial_account_id');
+    }
+
+    public function getCurrentBalanceAttribute(): float
+    {
+        $movement = (float) $this->journalEntries()
+            ->selectRaw('COALESCE(SUM(debit - credit), 0) as balance')
+            ->value('balance');
+
+        return round($movement, 2);
+    }
 }
