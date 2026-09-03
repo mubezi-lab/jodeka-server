@@ -37,6 +37,7 @@ use App\Http\Controllers\NetworkRouterController;
 use App\Http\Controllers\HotspotProfileController;
 use App\Http\Controllers\HotspotVoucherController;
 use App\Http\Controllers\HotspotCustomerInvitationController;
+use App\Http\Controllers\HotspotPermanentUserController;
 use App\Http\Controllers\WifiPortalController;
 
 use App\Http\Controllers\DailyCashEntryController;
@@ -473,6 +474,37 @@ Route::middleware([
         '/hotspot-vouchers/{hotspotVoucher}/cancel',
         [HotspotVoucherController::class, 'cancel']
     )->name('hotspot-vouchers.cancel');
+
+    /*
+    |--------------------------------------------------------------------------
+    | PERMANENT HOTSPOT USERS
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/hotspot-permanent-users',
+        [HotspotPermanentUserController::class, 'index']
+    )->name('hotspot-permanent-users.index');
+
+    Route::post(
+        '/hotspot-permanent-users',
+        [HotspotPermanentUserController::class, 'store']
+    )->name('hotspot-permanent-users.store');
+
+    Route::patch(
+        '/hotspot-permanent-users/{hotspotPermanentUser}/toggle',
+        [HotspotPermanentUserController::class, 'toggle']
+    )->name('hotspot-permanent-users.toggle');
+
+    Route::post(
+        '/hotspot-permanent-users/{hotspotPermanentUser}/payments',
+        [HotspotPermanentUserController::class, 'payment']
+    )->name('hotspot-permanent-users.payments.store');
+
+    Route::post(
+        '/hotspot-permanent-users/sync',
+        [HotspotPermanentUserController::class, 'sync']
+    )->name('hotspot-permanent-users.sync');
 
 
     /*

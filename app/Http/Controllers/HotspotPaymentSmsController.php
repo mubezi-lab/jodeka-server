@@ -6,6 +6,7 @@ use App\Jobs\SendHotspotVoucherSmsJob;
 use App\Models\HotspotPayment;
 use App\Models\HotspotProfile;
 use App\Services\HotspotPaymentSmsParser;
+use App\Services\HotspotPermanentPaymentService;
 use App\Services\HotspotVoucherGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class HotspotPaymentSmsController extends Controller
     public function store(
         Request $request,
         HotspotPaymentSmsParser $parser,
-        HotspotVoucherGenerator $voucherGenerator
+        HotspotVoucherGenerator $voucherGenerator,
+        HotspotPermanentPaymentService $permanentPayments
     ): JsonResponse {
         /*
         |--------------------------------------------------------------------------
@@ -92,6 +94,46 @@ class HotspotPaymentSmsController extends Controller
                     'hotspot_profile_id' => $payment->hotspot_profile_id,
                     'hotspot_profile' => $payment->profile?->name,
                 ]);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | REGISTERED DAILY CUSTOMER PAYMENT
+            |--------------------------------------------------------------------------
+            |
+            | A payment from an enabled permanent daily customer's registered phone
+            | settles that customer's oldest charges. It must not generate a voucher.
+            |
+            */
+
+            $permanentUser = $permanentPayments->findDailyCustomer(
+                $data['payer_phone'] ?? null
+            );
+
+            if ($permanentUser) {
+                if (! $payment) {
+                    $data['hotspot_profile_id'] = null;
+                    $data['status'] = 'permanent_pending';
+                    $payment = HotspotPayment::create($data);
+                }
+
+                $permanentPayment = $permanentPayments->recordSmsPayment(
+                    $permanentUser,
+                    $payment
+                );
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Permanent hotspot customer payment recorded successfully.',
+                    'duplicate' => ! $permanentPayment->wasRecentlyCreated,
+                    'payment_id' => $payment->id,
+                    'permanent_user_id' => $permanentUser->id,
+                    'permanent_user' => $permanentUser->name,
+                    'amount' => $payment->amount,
+                    'allocated_amount' => $permanentPayment->allocated_amount,
+                    'credit_amount' => $permanentPayment->credit_amount,
+                    'status' => 'permanent_completed',
+                ], $payment->wasRecentlyCreated ? 201 : 200);
             }
 
             /*

@@ -11,3 +11,12 @@ Artisan::command('inspire', function () {
 Schedule::command('hotspot:sync')
     ->everyMinute()
     ->withoutOverlapping();
+
+Schedule::command('hotspot:permanent-sync')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+Schedule::command('hotspot:permanent-reminders')
+    ->dailyAt('16:00')
+    ->timezone('Africa/Dar_es_Salaam')
+    ->withoutOverlapping();

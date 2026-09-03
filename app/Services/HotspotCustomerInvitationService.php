@@ -27,6 +27,15 @@ class HotspotCustomerInvitationService
             ->whereNotNull('vouchers.first_login_at')
             ->where('vouchers.status', 'expired')
             ->whereDate('payments.paid_at', '<', $campaignDate)
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('hotspot_permanent_users as permanent_users')
+                    ->whereColumn(
+                        'permanent_users.normalized_phone',
+                        'payments.payer_phone'
+                    )
+                    ->where('permanent_users.enabled', true);
+            })
             ->whereNotExists(function ($query) use ($campaignDate) {
                 $query->selectRaw('1')
                     ->from('hotspot_payments as today_payments')

@@ -824,6 +824,14 @@
 
             <div class="hotspot-actions">
 
+                <a href="{{ route('hotspot-permanent-users.index') }}" class="hotspot-action dark">
+
+                    <i class="fa-solid fa-users"></i>
+
+                    Permanent Users
+
+                </a>
+
                 <form
                     method="POST"
                     action="{{ route('hotspot-vouchers.customer-invitations.store') }}"
