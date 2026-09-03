@@ -20,7 +20,8 @@ class HotspotVoucherSmsServiceTest extends TestCase
         config([
             'services.beem.api_key' => 'test-key',
             'services.beem.secret_key' => 'test-secret',
-            'services.beem.sender' => 'JODEKA',
+            'services.beem.sender' => 'BAGAMBAKAMO',
+            'services.hotspot_beem.sender' => 'JODEKA',
         ]);
 
         Http::fake([
@@ -36,7 +37,6 @@ class HotspotVoucherSmsServiceTest extends TestCase
             'amount' => 500,
             'payer_phone' => '0659840000',
         ]);
-
         $payment->id = 15;
 
         $voucher = new HotspotVoucher([
@@ -51,24 +51,14 @@ class HotspotVoucherSmsServiceTest extends TestCase
             new BeemSmsService()
         );
 
-        $service->send(
-            $payment,
-            $voucher,
-            $profile
-        );
+        $service->send($payment, $voucher, $profile);
 
         Http::assertSent(function ($request) {
             return $request['source_addr'] === 'JODEKA'
                 && $request['recipients'][0]['recipient_id'] === 15
                 && $request['recipients'][0]['dest_addr'] === '255659840000'
-                && str_contains(
-                    $request['message'],
-                    'JDK12345'
-                )
-                && str_contains(
-                    $request['message'],
-                    '500TSH-12HRS'
-                );
+                && str_contains($request['message'], 'JDK12345')
+                && str_contains($request['message'], '500TSH-12HRS');
         });
     }
 }

@@ -6,6 +6,7 @@ use App\Models\HotspotPayment;
 use App\Models\HotspotProfile;
 use App\Models\HotspotVoucher;
 use InvalidArgumentException;
+use RuntimeException;
 
 class HotspotVoucherSmsService
 {
@@ -20,6 +21,16 @@ class HotspotVoucherSmsService
         HotspotProfile $profile
     ): array {
         $phone = $this->normalizePhone($payment->payer_phone);
+
+        $sender = trim(
+            (string) config('services.hotspot_beem.sender')
+        );
+
+        if ($sender === '') {
+            throw new RuntimeException(
+                'HOTSPOT_BEEM_SENDER is not configured.'
+            );
+        }
 
         $amount = number_format(
             (float) $payment->amount,
@@ -41,7 +52,7 @@ class HotspotVoucherSmsService
                 'recipient_id' => $payment->id,
                 'dest_addr' => $phone,
             ],
-        ], $message);
+        ], $message, $sender);
     }
 
     private function normalizePhone(?string $phone): string

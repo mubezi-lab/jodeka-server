@@ -45,6 +45,10 @@ return [
         'api_key' => env('HOTSPOT_SMS_API_KEY'),
     ],
 
+    'hotspot_beem' => [
+        'sender' => env('HOTSPOT_BEEM_SENDER'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | BEEM SMS

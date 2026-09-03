@@ -7,7 +7,11 @@ use RuntimeException;
 
 class BeemSmsService
 {
-    public function send(array $recipients, string $message): array
+    public function send(
+        array $recipients,
+        string $message,
+        ?string $sender = null
+    ): array
     {
         /*
         |--------------------------------------------------------------------------
@@ -21,7 +25,8 @@ class BeemSmsService
         )
             ->timeout(30)
             ->post('https://apisms.beem.africa/v1/send', [
-                'source_addr' => config('services.beem.sender'),
+                'source_addr' => $sender
+                    ?: config('services.beem.sender'),
                 'encoding' => 0,
                 'schedule_time' => '',
                 'message' => $message,
