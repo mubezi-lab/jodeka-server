@@ -318,6 +318,15 @@
             background: #2563eb;
         }
 
+        .hotspot-action.orange {
+            background: #ea580c;
+        }
+
+        .hotspot-action:disabled {
+            cursor: not-allowed;
+            opacity: .55;
+        }
+
         .hotspot-alert {
             margin-bottom: 16px;
             padding: 12px 15px;
@@ -814,6 +823,28 @@
 
 
             <div class="hotspot-actions">
+
+                <form
+                    method="POST"
+                    action="{{ route('hotspot-vouchers.customer-invitations.store') }}"
+                    onsubmit="return confirm('Tuma ujumbe wa mwaliko kwa wateja {{ $invitationEligibleCount }}? Kila namba itatumiwa mara moja tu leo.');"
+                >
+
+                    @csrf
+
+                    <button
+                        type="submit"
+                        class="hotspot-action orange"
+                        {{ $invitationEligibleCount === 0 ? 'disabled' : '' }}
+                    >
+
+                        <i class="fa-solid fa-paper-plane"></i>
+
+                        Invite Customers ({{ $invitationEligibleCount }})
+
+                    </button>
+
+                </form>
 
                 <a href="{{ route('hotspot-vouchers.mikrotik') }}" class="hotspot-action dark">
 

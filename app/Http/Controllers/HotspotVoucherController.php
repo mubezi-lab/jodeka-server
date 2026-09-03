@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\HotspotProfile;
 use App\Models\HotspotVoucher;
 use App\Models\NetworkRouter;
+use App\Services\HotspotCustomerInvitationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use RouterOS\Client;
@@ -18,7 +19,10 @@ class HotspotVoucherController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function index(Request $request)
+    public function index(
+        Request $request,
+        HotspotCustomerInvitationService $invitationService
+    )
     {
         $tab = $request->query('tab', 'online');
 
@@ -594,6 +598,8 @@ class HotspotVoucherController extends Controller
                 'cancelledCount' => $cancelledCount,
                 'allCount' => $allCount,
                 'routerErrors' => $routerErrors,
+                'invitationEligibleCount' =>
+                    $invitationService->eligibleCount(),
             ]
         );
     }

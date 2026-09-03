@@ -36,6 +36,7 @@ use App\Http\Controllers\FixedExpensePaymentController;
 use App\Http\Controllers\NetworkRouterController;
 use App\Http\Controllers\HotspotProfileController;
 use App\Http\Controllers\HotspotVoucherController;
+use App\Http\Controllers\HotspotCustomerInvitationController;
 use App\Http\Controllers\WifiPortalController;
 
 use App\Http\Controllers\DailyCashEntryController;
@@ -462,6 +463,11 @@ Route::middleware([
         '/hotspot-vouchers/sync-status',
         [HotspotVoucherController::class, 'syncStatus']
     )->name('hotspot-vouchers.sync-status');
+
+    Route::post(
+        '/hotspot-vouchers/customer-invitations',
+        [HotspotCustomerInvitationController::class, 'store']
+    )->name('hotspot-vouchers.customer-invitations.store');
 
     Route::post(
         '/hotspot-vouchers/{hotspotVoucher}/cancel',
