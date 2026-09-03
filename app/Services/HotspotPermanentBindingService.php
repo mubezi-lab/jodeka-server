@@ -65,4 +65,58 @@ class HotspotPermanentBindingService
             )
             ->read();
     }
+
+    public function removeBypassAndDisconnect(
+        NetworkRouter $router,
+        string $macAddress
+    ): void {
+        $client = $this->clients->make($router);
+        $macAddress = strtoupper(trim($macAddress));
+
+        $bindings = $client
+            ->query(
+                (new Query('/ip/hotspot/ip-binding/print'))
+                    ->where('mac-address', $macAddress)
+            )
+            ->read();
+
+        foreach ($bindings as $binding) {
+            if (
+                strtoupper((string) ($binding['mac-address'] ?? '')) !== $macAddress
+                || empty($binding['.id'])
+            ) {
+                continue;
+            }
+
+            $client
+                ->query(
+                    (new Query('/ip/hotspot/ip-binding/remove'))
+                        ->equal('.id', $binding['.id'])
+                )
+                ->read();
+        }
+
+        $hosts = $client
+            ->query(
+                (new Query('/ip/hotspot/host/print'))
+                    ->where('mac-address', $macAddress)
+            )
+            ->read();
+
+        foreach ($hosts as $host) {
+            if (
+                strtoupper((string) ($host['mac-address'] ?? '')) !== $macAddress
+                || empty($host['.id'])
+            ) {
+                continue;
+            }
+
+            $client
+                ->query(
+                    (new Query('/ip/hotspot/host/remove'))
+                        ->equal('.id', $host['.id'])
+                )
+                ->read();
+        }
+    }
 }

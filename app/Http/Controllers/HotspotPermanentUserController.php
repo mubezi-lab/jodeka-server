@@ -114,14 +114,61 @@ class HotspotPermanentUserController extends Controller
         );
     }
 
-    public function toggle(HotspotPermanentUser $hotspotPermanentUser): RedirectResponse
-    {
-        $hotspotPermanentUser->update([
-            'enabled' => ! $hotspotPermanentUser->enabled,
-            'is_online' => false,
-        ]);
+    public function toggle(
+        HotspotPermanentUser $hotspotPermanentUser,
+        HotspotPermanentBindingService $bindings
+    ): RedirectResponse {
+        $router = $hotspotPermanentUser->router;
 
-        return back()->with('success', 'Permanent user status updated.');
+        if (! $router || ! $router->enabled) {
+            return back()->with(
+                'error',
+                'Router ya permanent user haipo au imezimwa; hakuna mabadiliko yaliyofanywa.'
+            );
+        }
+
+        try {
+            if ($hotspotPermanentUser->enabled) {
+                $bindings->removeBypassAndDisconnect(
+                    $router,
+                    $hotspotPermanentUser->mac_address
+                );
+
+                $hotspotPermanentUser->update([
+                    'enabled' => false,
+                    'is_online' => false,
+                ]);
+
+                return back()->with(
+                    'success',
+                    'Permanent user deactivated and MikroTik bypass removed. Usage and payment history retained.'
+                );
+            }
+
+            $bindings->ensureBypassed(
+                $router,
+                $hotspotPermanentUser->mac_address,
+                $hotspotPermanentUser->name,
+                $hotspotPermanentUser->user_type
+            );
+
+            $hotspotPermanentUser->update([
+                'enabled' => true,
+                'is_online' => false,
+            ]);
+
+            return back()->with(
+                'success',
+                'Permanent user reactivated and MikroTik bypass restored.'
+            );
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->with(
+                'error',
+                'MikroTik haijakamilisha mabadiliko. Status ya permanent user haijabadilishwa; jaribu tena.'
+            );
+        }
     }
 
     public function payment(

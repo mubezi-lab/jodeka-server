@@ -18,7 +18,7 @@
     .permanent-head,.permanent-actions,.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
     .permanent-head h1{margin:0;font-size:30px}.permanent-head p{margin:5px 0 0;color:#64748b}
     .permanent-actions{justify-content:flex-end}.btn{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:9px;padding:11px 15px;font-weight:800;text-decoration:none;cursor:pointer}
-    .btn-primary{background:#2563eb;color:#fff}.btn-green{background:#059669;color:#fff}.btn-dark{background:#17375f;color:#fff}.btn-light{background:#eaf1fb;color:#17375f}
+    .btn-primary{background:#2563eb;color:#fff}.btn-green{background:#059669;color:#fff}.btn-dark{background:#17375f;color:#fff}.btn-danger{background:#dc2626;color:#fff}.btn-light{background:#eaf1fb;color:#17375f}
     .notice{margin:18px 0;padding:12px 15px;border-radius:9px}.notice.success{background:#dcfce7;color:#166534}.notice.error{background:#fee2e2;color:#991b1b}
     .panel{margin-top:18px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 8px 24px rgba(15,39,71,.06);overflow:hidden}
     .panel-head{padding:18px 20px;border-bottom:1px solid #e2e8f0}.panel-head h2{margin:0;font-size:19px}
@@ -78,7 +78,7 @@
                     <tr>
                         <td><strong>{{ $user->name }}</strong><br><span class="muted">{{ $user->router?->name }}</span></td>
                         <td><span class="pill {{ $user->user_type === 'staff' ? 'staff' : 'customer' }}">{{ $user->user_type === 'staff' ? 'Staff' : 'Daily Customer' }}</span></td>
-                        <td><span class="pill {{ !$user->enabled ? 'disabled' : ($user->is_online ? 'online' : 'offline') }}">{{ !$user->enabled ? 'Tracking Off' : ($user->is_online ? 'Online' : 'Offline') }}</span></td>
+                        <td><span class="pill {{ !$user->enabled ? 'disabled' : ($user->is_online ? 'online' : 'offline') }}">{{ !$user->enabled ? 'Deactivated' : ($user->is_online ? 'Online' : 'Offline') }}</span></td>
                         <td>{{ $user->phone ?: '-' }}<br><span class="muted">{{ $user->mac_address }}</span></td>
                         <td>{{ $user->last_ip ?: '-' }}</td>
                         <td><strong>{{ $formatBytes($totalBytes) }}</strong><br><span class="muted">Up {{ $formatBytes($usage?->bytes_in ?? 0) }} / Down {{ $formatBytes($usage?->bytes_out ?? 0) }}</span></td>
@@ -89,7 +89,7 @@
                                 @if($user->user_type === 'daily_customer')
                                 <form class="pay-form" method="POST" action="{{ route('hotspot-permanent-users.payments.store', $user) }}">@csrf<input class="field" type="number" name="amount" min="1" value="500" required><button class="btn btn-green" type="submit">Pay</button></form>
                                 @endif
-                                <form method="POST" action="{{ route('hotspot-permanent-users.toggle', $user) }}">@csrf @method('PATCH')<button class="btn btn-dark" type="submit">{{ $user->enabled ? 'Pause Tracking' : 'Resume Tracking' }}</button></form>
+                                <form method="POST" action="{{ route('hotspot-permanent-users.toggle', $user) }}" onsubmit="return confirm('{{ $user->enabled ? 'Deactivate this user and remove MikroTik internet bypass? Their history will remain.' : 'Reactivate this user and restore MikroTik internet bypass?' }}')">@csrf @method('PATCH')<button class="btn {{ $user->enabled ? 'btn-danger' : 'btn-green' }}" type="submit">{{ $user->enabled ? 'Deactivate' : 'Reactivate' }}</button></form>
                             </div>
                         </td>
                     </tr>
