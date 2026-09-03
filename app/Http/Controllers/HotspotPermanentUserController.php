@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\HotspotPermanentUser;
 use App\Models\NetworkRouter;
 use App\Services\HotspotPermanentPaymentService;
+use App\Services\HotspotPermanentBindingService;
 use App\Services\HotspotPermanentUsageService;
 use App\Services\HotspotPhoneService;
 use Illuminate\Http\RedirectResponse;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class HotspotPermanentUserController extends Controller
 {
@@ -39,7 +41,8 @@ class HotspotPermanentUserController extends Controller
 
     public function store(
         Request $request,
-        HotspotPhoneService $phones
+        HotspotPhoneService $phones,
+        HotspotPermanentBindingService $bindings
     ): RedirectResponse {
         $data = $request->validate([
             'network_router_id' => ['required', 'exists:network_routers,id'],
@@ -77,9 +80,38 @@ class HotspotPermanentUserController extends Controller
         $data['usage_threshold_bytes'] = 1048576;
         $data['enabled'] = true;
 
+        $router = NetworkRouter::whereKey($data['network_router_id'])
+            ->where('enabled', true)
+            ->first();
+
+        if (! $router) {
+            throw ValidationException::withMessages([
+                'network_router_id' => 'Router hii haipo au imezimwa.',
+            ]);
+        }
+
+        try {
+            $bindings->ensureBypassed(
+                $router,
+                $data['mac_address'],
+                $data['name'],
+                $data['user_type']
+            );
+        } catch (Throwable $e) {
+            report($e);
+
+            throw ValidationException::withMessages([
+                'mac_address' => 'Imeshindikana kuweka IP Binding kwenye MikroTik. '
+                    . 'Permanent user hajahifadhiwa; hakikisha router inapatikana kisha ujaribu tena.',
+            ]);
+        }
+
         HotspotPermanentUser::create($data);
 
-        return back()->with('success', 'Permanent hotspot user added successfully.');
+        return back()->with(
+            'success',
+            'Permanent hotspot user added and MikroTik bypass binding configured successfully.'
+        );
     }
 
     public function toggle(HotspotPermanentUser $hotspotPermanentUser): RedirectResponse
