@@ -21,12 +21,21 @@ class HotspotPayment extends Model
         'claimed_at',
         'claimed_by_mac',
         'claimed_by_ip',
+        'voucher_sms_status',
+        'voucher_sms_sent_at',
+        'voucher_sms_failed_at',
+        'voucher_sms_error',
+        'voucher_sms_attempts',
+        'voucher_sms_response',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'paid_at' => 'datetime',
         'claimed_at' => 'datetime',
+        'voucher_sms_sent_at' => 'datetime',
+        'voucher_sms_failed_at' => 'datetime',
+        'voucher_sms_response' => 'array',
     ];
 
     public function profile(): BelongsTo

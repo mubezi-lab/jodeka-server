@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendHotspotVoucherSmsJob;
 use App\Models\HotspotPayment;
 use App\Models\HotspotProfile;
 use App\Services\HotspotPaymentSmsParser;
@@ -77,6 +78,8 @@ class HotspotPaymentSmsController extends Controller
             */
 
             if ($payment && $payment->voucher_id) {
+                $this->dispatchVoucherSmsIfNeeded($payment);
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Payment already processed.',
@@ -199,7 +202,11 @@ class HotspotPaymentSmsController extends Controller
 
                 $payment->voucher_id = $voucher->id;
                 $payment->status = 'completed';
+                $payment->voucher_sms_status = 'pending';
+                $payment->voucher_sms_error = null;
                 $payment->save();
+
+                $this->dispatchVoucherSms($payment);
 
                 return response()->json([
                     'success' => true,
@@ -258,6 +265,47 @@ class HotspotPaymentSmsController extends Controller
                 'success' => false,
                 'message' => 'Failed to process SMS.',
             ], 500);
+        }
+    }
+
+    private function dispatchVoucherSmsIfNeeded(
+        HotspotPayment $payment
+    ): void {
+        if (
+            ! $payment->voucher_id
+            || ! $payment->payer_phone
+            || in_array(
+                $payment->voucher_sms_status,
+                ['pending', 'processing', 'sent'],
+                true
+            )
+        ) {
+            return;
+        }
+
+        $this->dispatchVoucherSms($payment);
+    }
+
+    private function dispatchVoucherSms(
+        HotspotPayment $payment
+    ): void {
+
+        $payment->voucher_sms_status = 'pending';
+        $payment->voucher_sms_error = null;
+        $payment->save();
+
+        try {
+            SendHotspotVoucherSmsJob::dispatch($payment->id);
+        } catch (Throwable $e) {
+            $payment->voucher_sms_status = 'failed';
+            $payment->voucher_sms_error = mb_substr(
+                $e->getMessage(),
+                0,
+                1000
+            );
+            $payment->save();
+
+            report($e);
         }
     }
 }
