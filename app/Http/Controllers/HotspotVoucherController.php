@@ -235,7 +235,16 @@ class HotspotVoucherController extends Controller
             */
 
             if (! $voucher->first_login_at) {
-                $voucher->first_login_at = now();
+                $uptimeSeconds =
+                    $this->mikrotikDurationToSeconds(
+                        $active['uptime'] ?? null
+                    );
+
+                $voucher->first_login_at =
+                    $uptimeSeconds > 0
+                        ? now()->subSeconds($uptimeSeconds)
+                        : now();
+
                 $voucher->used_at = $voucher->first_login_at;
 
                 /*
@@ -821,6 +830,21 @@ class HotspotVoucherController extends Controller
                         )
                         ->read();
 
+                $mikrotikUsers =
+                    $client
+                        ->query(
+                            new Query(
+                                '/ip/hotspot/user/print'
+                            )
+                        )
+                        ->read();
+
+                $mikrotikUsernames = collect($mikrotikUsers)
+                    ->pluck('name')
+                    ->filter()
+                    ->values()
+                    ->all();
+
                 foreach ($activeUsers as $activeUser) {
 
                     $username =
@@ -850,14 +874,28 @@ class HotspotVoucherController extends Controller
                     if (
                         in_array(
                             $voucher->status,
-                            [
-                                'expired',
-                                'cancelled',
-                                'disabled',
-                            ],
+                            ['cancelled', 'disabled'],
                             true
                         )
                     ) {
+                        $this->removeVoucherFromMikrotik(
+                            $client,
+                            $voucher->username
+                        );
+
+                        $voucher->last_synced_at = now();
+                        $voucher->save();
+
+                        $deletedFromMikrotik++;
+
+                        continue;
+                    }
+
+                    /*
+                    | Already-expired vouchers are removed by the cleanup query
+                    | below. They must never be restored to "used" here.
+                    */
+                    if ($voucher->status === 'expired') {
                         continue;
                     }
 
@@ -868,9 +906,15 @@ class HotspotVoucherController extends Controller
                     */
 
                     if (! $voucher->first_login_at) {
+                        $uptimeSeconds =
+                            $this->mikrotikDurationToSeconds(
+                                $activeUser['uptime'] ?? null
+                            );
 
                         $voucher->first_login_at =
-                            now();
+                            $uptimeSeconds > 0
+                                ? now()->subSeconds($uptimeSeconds)
+                                : now();
 
                         $voucher->used_at =
                             $voucher->first_login_at;
@@ -1013,10 +1057,17 @@ class HotspotVoucherController extends Controller
                         'network_router_id',
                         $router->id
                     )
-                        ->where(
-                            'status',
-                            'used'
-                        )
+                        ->where(function ($query) use ($mikrotikUsernames) {
+                            $query->where('status', 'used');
+
+                            if ($mikrotikUsernames !== []) {
+                                $query->orWhere(function ($expiredQuery) use ($mikrotikUsernames) {
+                                    $expiredQuery
+                                        ->where('status', 'expired')
+                                        ->whereIn('username', $mikrotikUsernames);
+                                });
+                            }
+                        })
                         ->whereNotNull(
                             'expires_at'
                         )
@@ -1039,14 +1090,16 @@ class HotspotVoucherController extends Controller
                         'expired';
 
                     $voucher->disabled_at =
-                        now();
+                        $voucher->disabled_at ?? now();
 
                     $voucher->last_synced_at =
                         now();
 
                     $voucher->save();
 
-                    $expired++;
+                    if ($voucher->wasChanged('status')) {
+                        $expired++;
+                    }
 
                     $deletedFromMikrotik++;
                 }
@@ -1174,6 +1227,38 @@ class HotspotVoucherController extends Controller
     | REMOVE VOUCHER FROM MIKROTIK
     |--------------------------------------------------------------------------
     */
+
+    private function mikrotikDurationToSeconds(
+        ?string $duration
+    ): int {
+        if (! $duration) {
+            return 0;
+        }
+
+        $seconds = 0;
+
+        preg_match_all(
+            '/(\d+)(w|d|h|m|s)/i',
+            $duration,
+            $matches,
+            PREG_SET_ORDER
+        );
+
+        foreach ($matches as $match) {
+            $value = (int) $match[1];
+
+            $seconds += match (strtolower($match[2])) {
+                'w' => $value * 604800,
+                'd' => $value * 86400,
+                'h' => $value * 3600,
+                'm' => $value * 60,
+                's' => $value,
+                default => 0,
+            };
+        }
+
+        return $seconds;
+    }
 
     private function removeVoucherFromMikrotik(
         Client $client,
