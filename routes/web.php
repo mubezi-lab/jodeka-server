@@ -38,6 +38,7 @@ use App\Http\Controllers\HotspotProfileController;
 use App\Http\Controllers\HotspotVoucherController;
 use App\Http\Controllers\HotspotCustomerInvitationController;
 use App\Http\Controllers\HotspotPermanentUserController;
+use App\Http\Controllers\HotspotCustomerController;
 use App\Http\Controllers\WifiPortalController;
 
 use App\Http\Controllers\DailyCashEntryController;
@@ -469,6 +470,16 @@ Route::middleware([
         '/hotspot-vouchers/customer-invitations',
         [HotspotCustomerInvitationController::class, 'store']
     )->name('hotspot-vouchers.customer-invitations.store');
+
+    Route::get(
+        '/hotspot-customers',
+        [HotspotCustomerController::class, 'index']
+    )->name('hotspot-customers.index');
+
+    Route::post(
+        '/hotspot-customers/broadcasts',
+        [HotspotCustomerController::class, 'broadcast']
+    )->name('hotspot-customers.broadcasts.store');
 
     Route::post(
         '/hotspot-vouchers/{hotspotVoucher}/cancel',

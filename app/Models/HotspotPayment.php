@@ -27,6 +27,7 @@ class HotspotPayment extends Model
         'voucher_sms_error',
         'voucher_sms_attempts',
         'voucher_sms_response',
+        'hotspot_customer_id',
     ];
 
     protected $casts = [
@@ -46,5 +47,10 @@ class HotspotPayment extends Model
     public function voucher(): BelongsTo
     {
         return $this->belongsTo(HotspotVoucher::class, 'voucher_id');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(HotspotCustomer::class, 'hotspot_customer_id');
     }
 }

@@ -7,6 +7,7 @@ use App\Models\HotspotPayment;
 use App\Models\HotspotProfile;
 use App\Services\HotspotPaymentSmsParser;
 use App\Services\HotspotPermanentPaymentService;
+use App\Services\HotspotCustomerService;
 use App\Services\HotspotVoucherGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,8 @@ class HotspotPaymentSmsController extends Controller
         Request $request,
         HotspotPaymentSmsParser $parser,
         HotspotVoucherGenerator $voucherGenerator,
-        HotspotPermanentPaymentService $permanentPayments
+        HotspotPermanentPaymentService $permanentPayments,
+        HotspotCustomerService $customers
     ): JsonResponse {
         /*
         |--------------------------------------------------------------------------
@@ -80,6 +82,7 @@ class HotspotPaymentSmsController extends Controller
             */
 
             if ($payment && $payment->voucher_id) {
+                $customers->syncPayment($payment);
                 $this->dispatchVoucherSmsIfNeeded($payment);
 
                 return response()->json([
@@ -247,6 +250,8 @@ class HotspotPaymentSmsController extends Controller
                 $payment->voucher_sms_status = 'pending';
                 $payment->voucher_sms_error = null;
                 $payment->save();
+
+                $customers->syncPayment($payment);
 
                 $this->dispatchVoucherSms($payment);
 

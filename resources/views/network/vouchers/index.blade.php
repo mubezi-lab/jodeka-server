@@ -824,6 +824,14 @@
 
             <div class="hotspot-actions">
 
+                <a href="{{ route('hotspot-customers.index') }}" class="hotspot-action dark">
+
+                    <i class="fa-solid fa-address-book"></i>
+
+                    Hotspot Customers
+
+                </a>
+
                 <a href="{{ route('hotspot-permanent-users.index') }}" class="hotspot-action dark">
 
                     <i class="fa-solid fa-users"></i>
