@@ -49,6 +49,7 @@ use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\FinancialAccountTransferController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\DailyStockClosingController;
 
 
 /*
@@ -166,6 +167,19 @@ Route::middleware(['auth', 'role:admin,manager'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin,manager,employee'])->get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+
+Route::middleware(['auth', 'role:admin,manager,employee'])->group(function () {
+    Route::get('/daily-stock', [DailyStockClosingController::class, 'index'])->name('daily-stock.index');
+    Route::get('/daily-stock/context', [DailyStockClosingController::class, 'context'])->name('daily-stock.context');
+    Route::post('/daily-stock', [DailyStockClosingController::class, 'store'])->name('daily-stock.store');
+    Route::get('/daily-stock/{dailyStock}', [DailyStockClosingController::class, 'show'])->whereNumber('dailyStock')->name('daily-stock.show');
+    Route::post('/procurement/requests/{stockRequest}/confirm-auto', [DailyStockClosingController::class, 'confirmAuto'])->name('procurement.requests.confirm-auto');
+});
+
+Route::middleware(['auth', 'role:admin,manager'])->group(function () {
+    Route::get('/daily-stock/policies/list', [DailyStockClosingController::class, 'policies'])->name('daily-stock.policies');
+    Route::post('/daily-stock/policies', [DailyStockClosingController::class, 'savePolicies'])->name('daily-stock.policies.store');
+});
 
 
 /*

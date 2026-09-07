@@ -188,6 +188,7 @@
     'products.*',
     'stocks.*',
     'purchases.*',
+    'daily-stock.*',
     'procurement.*',
     'suppliers.*',
     'supplier-bills.*'
@@ -225,6 +226,12 @@
 
 
                         {{-- STOCK --}}
+                        <a href="{{ route('daily-stock.index') }}" class="flex items-center gap-3 px-4 py-2 rounded-lg transition
+                                   {{ request()->routeIs('daily-stock.*') ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+                            <i class="fa-solid fa-clipboard-check w-5 text-center text-sm"></i>
+                            <span>Daily Stock Closing</span>
+                        </a>
+
                         <a href="{{ route('stocks.index') }}" class="flex items-center gap-3
                                    px-4 py-2 rounded-lg transition
                                    {{ request()->routeIs('stocks.*')

@@ -39,7 +39,7 @@ class ProcurementService
 
     public function review(StockRequest $request, array $data, int $userId): StockRequest
     {
-        if ($request->status !== 'pending') {
+        if (!in_array($request->status, ['draft', 'pending'], true)) {
             throw ValidationException::withMessages(['request' => 'Ombi hili tayari limekaguliwa.']);
         }
         return DB::transaction(function () use ($request, $data, $userId) {

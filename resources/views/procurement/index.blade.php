@@ -8,11 +8,19 @@
         <div><h2 class="text-2xl font-bold">Stock Requests</h2><p class="text-gray-600">Create and follow branch stock requests.</p></div>
         <button type="button" id="open-request-modal" class="bg-blue-600 text-white px-4 py-2 rounded">+ New Stock Request</button>
     </div>
+    <form method="GET" class="bg-white shadow rounded p-4 grid md:grid-cols-6 gap-3 items-end">
+        <div><label class="block text-sm text-gray-600">Request number</label><input name="search" value="{{ request('search') }}" class="w-full border rounded p-2" placeholder="REQ / AUTO"></div>
+        <div><label class="block text-sm text-gray-600">Branch</label><select name="business_id" class="w-full border rounded p-2"><option value="">All branches</option>@foreach($businesses as $business)<option value="{{ $business->id }}" @selected(request('business_id')==$business->id)>{{ $business->name }}</option>@endforeach</select></div>
+        <div><label class="block text-sm text-gray-600">Source</label><select name="source" class="w-full border rounded p-2"><option value="">Manual & Auto</option><option value="manual" @selected(request('source')==='manual')>Manual</option><option value="auto" @selected(request('source')==='auto')>Auto</option></select></div>
+        <div><label class="block text-sm text-gray-600">Status</label><select name="status" class="w-full border rounded p-2"><option value="">All statuses</option>@foreach(['draft','pending','approved','rejected','ordered','partially_received','received'] as $status)<option value="{{ $status }}" @selected(request('status')===$status)>{{ ucwords(str_replace('_',' ',$status)) }}</option>@endforeach</select></div>
+        <div><label class="block text-sm text-gray-600">Month</label><input type="month" name="month" value="{{ request('month') }}" class="w-full border rounded p-2"></div>
+        <div class="flex gap-2"><button class="bg-blue-600 text-white px-4 py-2 rounded">Filter</button><a href="{{ route('procurement.index') }}" class="bg-gray-200 px-4 py-2 rounded">Reset</a></div>
+    </form>
     <div class="bg-white shadow rounded overflow-x-auto">
         <table class="w-full text-left min-w-[760px]">
             <thead class="bg-gray-100"><tr><th class="p-3">Request</th><th>Branch</th><th>Date</th><th>By</th><th>Status</th><th></th></tr></thead>
             <tbody>@forelse($requests as $row)
-                <tr class="border-t"><td class="p-3">{{ $row->request_number }}</td><td>{{ $row->business->name }}</td><td>{{ $row->request_date->format('d/m/Y') }}</td><td>{{ $row->requester->name }}</td><td>{{ ucwords(str_replace('_',' ',$row->status)) }}</td><td><a class="text-blue-700" href="{{ route('procurement.requests.show',$row) }}">View</a></td></tr>
+                <tr class="border-t"><td class="p-3">{{ $row->request_number }} @if(($row->source ?? 'manual')==='auto')<span class="text-xs bg-blue-100 text-blue-700 rounded px-2 py-1">AUTO</span>@endif</td><td>{{ $row->business->name }}</td><td>{{ $row->request_date->format('d/m/Y') }}</td><td>{{ $row->requester->name }}</td><td>{{ ucwords(str_replace('_',' ',$row->status)) }}</td><td><a class="text-blue-700" href="{{ route('procurement.requests.show',$row) }}">View</a></td></tr>
             @empty<tr><td colspan="6" class="p-6 text-center text-gray-500">Hakuna stock request bado.</td></tr>@endforelse</tbody>
         </table><div class="p-3">{{ $requests->links() }}</div>
     </div>

@@ -19,13 +19,25 @@ class ProcurementController extends Controller
 
     public function __construct(private ProcurementService $service) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $user = request()->user();
         $role = $user->role?->name;
         $businesses = $this->accessibleBusinesses()->orderBy('name')->get();
         $businessIds = $businesses->pluck('id');
         $fixedBusiness = $role === 'employee' ? $businesses->firstWhere('id', $user->business_id) ?? $businesses->first() : null;
+
+        $requestQuery = StockRequest::with(['business','requester','items.product','purchaseOrder'])
+            ->whereIn('business_id', $businessIds)
+            ->when($request->filled('search'), fn ($query) => $query->where('request_number', 'like', '%'.(string) $request->string('search').'%'))
+            ->when($request->filled('business_id'), function ($query) use ($request, $businessIds) {
+                $businessId = $request->integer('business_id');
+                abort_unless($businessIds->contains($businessId), 403);
+                $query->where('business_id', $businessId);
+            })
+            ->when($request->filled('status'), fn ($query) => $query->where('status', (string) $request->string('status')))
+            ->when($request->filled('source'), fn ($query) => $query->where('source', (string) $request->string('source')))
+            ->when(preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month')), fn ($query) => $query->whereYear('request_date', substr($request->query('month'),0,4))->whereMonth('request_date', substr($request->query('month'),5,2)));
 
         return view('procurement.index', [
             'businesses' => $businesses,
@@ -34,8 +46,7 @@ class ProcurementController extends Controller
             'products' => Product::orderBy('name')->get(),
             'suppliers' => Supplier::where('is_active',true)->orderBy('name')->get(),
             'financialAccounts' => FinancialAccount::where('is_active',true)->orderBy('name')->get(),
-            'requests' => StockRequest::with(['business','requester','items.product','purchaseOrder'])
-                ->whereIn('business_id', $businessIds)->latest()->paginate(20),
+            'requests' => $requestQuery->latest()->paginate(20)->withQueryString(),
         ]);
     }
 
