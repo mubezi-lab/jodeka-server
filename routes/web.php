@@ -48,6 +48,7 @@ use App\Http\Controllers\DebtPaymentController;
 use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\FinancialAccountTransferController;
 use App\Http\Controllers\ProcurementController;
+use App\Http\Controllers\SupplierController;
 
 
 /*
@@ -160,7 +161,11 @@ Route::middleware(['auth', 'role:admin,manager,employee'])->group(function () {
 Route::middleware(['auth', 'role:admin,manager'])->group(function () {
     Route::post('/procurement/requests/{stockRequest}/review', [ProcurementController::class, 'review'])->name('procurement.requests.review');
     Route::post('/procurement/requests/{stockRequest}/order', [ProcurementController::class, 'order'])->name('procurement.requests.order');
+    Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+    Route::post('/supplier-bills/{supplierBill}/payments', [SupplierController::class, 'pay'])->name('supplier-bills.pay');
 });
+
+Route::middleware(['auth', 'role:admin,manager,employee'])->get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
 
 
 /*

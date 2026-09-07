@@ -188,7 +188,9 @@
     'products.*',
     'stocks.*',
     'purchases.*',
-    'procurement.*'
+    'procurement.*',
+    'suppliers.*',
+    'supplier-bills.*'
 ) ? '' : 'hidden' }}
                         mt-2 space-y-2 pl-3">
 
@@ -198,6 +200,11 @@
                                    {{ request()->routeIs('procurement.*') ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
                             <i class="fa-solid fa-clipboard-list w-5 text-center text-sm"></i>
                             <span>Stock Requests</span>
+                        </a>
+
+                        <a href="{{ route('suppliers.index') }}" class="flex items-center gap-3 px-4 py-2 rounded-lg transition
+                                   {{ request()->routeIs('suppliers.*','supplier-bills.*') ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+                            <i class="fa-solid fa-truck-field w-5 text-center text-sm"></i><span>Suppliers & Bills</span>
                         </a>
 
                         {{-- PRODUCTS --}}

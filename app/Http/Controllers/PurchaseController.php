@@ -14,7 +14,7 @@ class PurchaseController extends Controller
      */
     public function index()
     {
-        $purchases = Purchase::with(['product', 'business'])
+        $purchases = Purchase::with(['product', 'business', 'goodsReceiptItem'])
             ->latest()
             ->get();
 
@@ -85,6 +85,7 @@ class PurchaseController extends Controller
      */
     public function edit(Purchase $purchase)
     {
+        abort_if($purchase->goodsReceiptItem()->exists(), 403, 'Purchase iliyotengenezwa na goods receipt haiwezi kuhaririwa moja kwa moja.');
         $products = Product::all();
         $businesses = Business::all();
 
@@ -96,6 +97,7 @@ class PurchaseController extends Controller
      */
     public function update(Request $request, Purchase $purchase)
     {
+        abort_if($purchase->goodsReceiptItem()->exists(), 403, 'Purchase iliyotengenezwa na goods receipt haiwezi kuhaririwa moja kwa moja.');
         $validated = $request->validate([
             'product_id'   => ['required', 'exists:products,id'],
             'business_id'  => ['required', 'exists:businesses,id'],
@@ -142,6 +144,7 @@ class PurchaseController extends Controller
      */
     public function destroy(Purchase $purchase)
     {
+        abort_if($purchase->goodsReceiptItem()->exists(), 403, 'Purchase iliyotengenezwa na goods receipt haiwezi kufutwa moja kwa moja.');
         $purchase->delete();
 
         return redirect()->route('purchases.index')

@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class ProcurementService
 {
+    public function __construct(private SupplierAccountingService $supplierAccounting) {}
     public function createRequest(array $data, int $userId): StockRequest
     {
         return DB::transaction(function () use ($data, $userId) {
@@ -71,7 +72,9 @@ class ProcurementService
         return DB::transaction(function () use ($request, $data, $userId) {
             $order = PurchaseOrder::create([
                 'order_number' => $this->number('PO'), 'stock_request_id' => $request->id,
-                'business_id' => $request->business_id, 'supplier' => $data['supplier'] ?? null,
+                'business_id' => $request->business_id, 'supplier_id' => $data['supplier_id'] ?? null,
+                'supplier' => $data['supplier'] ?? null, 'payment_type' => $data['payment_type'],
+                'payment_financial_account_id' => $data['payment_financial_account_id'] ?? null,
                 'order_date' => $data['order_date'], 'notes' => $data['notes'] ?? null, 'ordered_by' => $userId,
             ]);
             foreach ($request->items->where('approved_packages', '>', 0) as $item) {
@@ -119,6 +122,8 @@ class ProcurementService
             $complete = $order->items->every(fn ($item) => (float) $item->receiptItems()->sum('received_packages') >= (float) $item->ordered_packages);
             $order->update(['status' => $complete ? 'received' : 'partially_received']);
             $order->stockRequest?->update(['status' => $complete ? 'received' : 'partially_received']);
+            $receipt->load(['items.orderItem','purchaseOrder']);
+            $this->supplierAccounting->billReceipt($receipt);
             return $receipt;
         });
     }

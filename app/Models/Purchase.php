@@ -26,4 +26,9 @@ class Purchase extends Model
     {
         return $this->belongsTo(Business::class);
     }
+
+    public function goodsReceiptItem()
+    {
+        return $this->hasOne(GoodsReceiptItem::class);
+    }
 }

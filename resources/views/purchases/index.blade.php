@@ -88,6 +88,12 @@
                                 {{-- Actions --}}
                                 <td class="border p-2 text-center space-x-1">
 
+                                    @if($purchase->goodsReceiptItem)
+                                        <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                                            Goods Receipt
+                                        </span>
+                                    @else
+
                                     {{-- EDIT --}}
                                     <a href="{{ route('purchases.edit', $purchase->id) }}"
                                         class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs">
@@ -105,6 +111,8 @@
                                             Delete
                                         </button>
                                     </form>
+
+                                    @endif
 
                                 </td>
 

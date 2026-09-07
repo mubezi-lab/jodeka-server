@@ -11,4 +11,5 @@ class GoodsReceipt extends Model
     public function purchaseOrder() { return $this->belongsTo(PurchaseOrder::class); }
     public function items() { return $this->hasMany(GoodsReceiptItem::class); }
     public function receiver() { return $this->belongsTo(User::class, 'received_by'); }
+    public function bill() { return $this->hasOne(SupplierBill::class); }
 }
