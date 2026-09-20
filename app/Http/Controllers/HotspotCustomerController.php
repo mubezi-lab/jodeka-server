@@ -10,6 +10,7 @@ use App\Services\HotspotCustomerBroadcastService;
 use App\Services\HotspotPhoneService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -35,10 +36,16 @@ class HotspotCustomerController extends Controller
             'campaign_date',
             now('Africa/Dar_es_Salaam')->toDateString()
         )->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
-        $manualMessages = HotspotManualSmsMessage::latest()->limit(10)->get();
+        $manualMessages = HotspotManualSmsMessage::with('customer')->latest()->limit(10)->get();
+        $contactOptions = HotspotCustomer::query()
+            ->where('active', true)
+            ->orderBy('name')
+            ->orderBy('normalized_phone')
+            ->get(['id', 'name', 'normalized_phone']);
 
         return view('network.hotspot-customers.index', compact(
-            'customers', 'customerCount', 'smsEligibleCount', 'messageStats', 'manualMessages', 'search'
+            'customers', 'customerCount', 'smsEligibleCount', 'messageStats',
+            'manualMessages', 'contactOptions', 'search'
         ));
     }
 
@@ -64,6 +71,7 @@ class HotspotCustomerController extends Controller
     public function manualSms(Request $request, HotspotPhoneService $phones): RedirectResponse
     {
         $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30'],
             'message' => ['required', 'string', 'max:918'],
         ]);
@@ -78,13 +86,28 @@ class HotspotCustomerController extends Controller
             return back()->withErrors(['phone' => $e->getMessage()])->withInput();
         }
 
-        $record = HotspotManualSmsMessage::create([
-            'phone' => $data['phone'],
-            'normalized_phone' => $normalizedPhone,
-            'message' => trim($data['message']),
-            'status' => 'pending',
-            'requested_by' => $request->user()?->id,
-        ]);
+        $record = DB::transaction(function () use ($data, $normalizedPhone, $request) {
+            $customer = HotspotCustomer::firstOrCreate(
+                ['normalized_phone' => $normalizedPhone],
+                [
+                    'name' => trim($data['name']),
+                    'phone' => $data['phone'],
+                    'total_payments' => 0,
+                    'total_amount' => 0,
+                    'active' => true,
+                    'sms_allowed' => true,
+                ]
+            );
+
+            return HotspotManualSmsMessage::create([
+                'hotspot_customer_id' => $customer->id,
+                'phone' => $data['phone'],
+                'normalized_phone' => $normalizedPhone,
+                'message' => trim($data['message']),
+                'status' => 'pending',
+                'requested_by' => $request->user()?->id,
+            ]);
+        });
 
         SendHotspotManualSmsJob::dispatch($record->id);
 
