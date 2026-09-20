@@ -501,6 +501,16 @@ Route::middleware([
     )->name('hotspot-customers.broadcasts.store');
 
     Route::post(
+        '/hotspot-customers/manual-sms',
+        [HotspotCustomerController::class, 'manualSms']
+    )->name('hotspot-customers.manual-sms.store');
+
+    Route::patch(
+        '/hotspot-customers/{hotspotCustomer}/sms',
+        [HotspotCustomerController::class, 'toggleSms']
+    )->name('hotspot-customers.sms.toggle');
+
+    Route::post(
         '/hotspot-vouchers/{hotspotVoucher}/cancel',
         [HotspotVoucherController::class, 'cancel']
     )->name('hotspot-vouchers.cancel');
