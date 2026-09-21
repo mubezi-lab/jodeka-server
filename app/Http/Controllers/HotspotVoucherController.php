@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HotspotCustomer;
 use App\Models\HotspotProfile;
 use App\Models\HotspotVoucher;
 use App\Models\NetworkRouter;
@@ -676,9 +677,21 @@ class HotspotVoucherController extends Controller
                 ->orderBy('price')
                 ->get();
 
+        $customerOptions =
+            HotspotCustomer::query()
+                ->orderByDesc('active')
+                ->orderBy('name')
+                ->orderBy('normalized_phone')
+                ->get([
+                    'id',
+                    'name',
+                    'normalized_phone',
+                    'active',
+                ]);
+
         return view(
             'network.vouchers.create',
-            compact('profiles')
+            compact('profiles', 'customerOptions')
         );
     }
 
@@ -697,7 +710,20 @@ class HotspotVoucherController extends Controller
 
                 'comment' =>
                     'nullable|string|max:255',
+
+                'hotspot_customer_id' =>
+                    'nullable|integer|exists:hotspot_customers,id',
             ]);
+
+        $customer = ! empty($data['hotspot_customer_id'])
+            ? HotspotCustomer::findOrFail($data['hotspot_customer_id'])
+            : null;
+
+        $comment = trim((string) ($data['comment'] ?? ''));
+
+        if ($customer && $comment === '') {
+            $comment = trim((string) $customer->name);
+        }
 
         $profile =
             HotspotProfile::with('router')
@@ -749,10 +775,10 @@ class HotspotVoucherController extends Controller
                         $profile->mikrotik_profile
                     );
 
-            if (! empty($data['comment'])) {
+            if ($comment !== '') {
                 $query->equal(
                     'comment',
-                    $data['comment']
+                    $comment
                 );
             }
 
@@ -760,7 +786,7 @@ class HotspotVoucherController extends Controller
                 ->query($query)
                 ->read();
 
-            HotspotVoucher::create([
+            $voucher = HotspotVoucher::create([
                 'network_router_id' =>
                     $router->id,
 
@@ -786,8 +812,29 @@ class HotspotVoucherController extends Controller
                     auth()->id(),
 
                 'comment' =>
-                    $data['comment'] ?? null,
+                    $comment !== '' ? $comment : null,
             ]);
+
+            if ($customer) {
+                return redirect()
+                    ->route('hotspot-customers.index')
+                    ->with([
+                        'success' =>
+                            'Voucher generated successfully: '
+                            . $username
+                            . '. Kagua ujumbe kisha utume SMS.',
+                        'manual_sms_prefill' => [
+                            'customer_id' => $customer->id,
+                            'name' => $customer->name,
+                            'phone' => $customer->normalized_phone,
+                            'message_type' => 'voucher',
+                            'message' =>
+                                'Karibu JODEKA Hotspot, voucher yako ni '
+                                . $voucher->username
+                                . '. Endelea kupata huduma bora ya WiFi.',
+                        ],
+                    ]);
+            }
 
             return redirect()
                 ->route('hotspot-vouchers.index')

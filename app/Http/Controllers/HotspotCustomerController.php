@@ -84,10 +84,12 @@ class HotspotCustomerController extends Controller
             ->orderBy('name')
             ->orderBy('normalized_phone')
             ->get(['id', 'name', 'normalized_phone']);
+        $manualSmsPrefill = session('manual_sms_prefill', []);
 
         return view('network.hotspot-customers.index', compact(
             'customers', 'customerCount', 'smsEligibleCount', 'messageStats',
-            'manualMessages', 'contactOptions', 'recoveryPayments', 'search', 'customerStatus'
+            'manualMessages', 'contactOptions', 'recoveryPayments', 'search',
+            'customerStatus', 'manualSmsPrefill'
         ));
     }
 
@@ -116,7 +118,28 @@ class HotspotCustomerController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30'],
             'message' => ['required', 'string', 'max:918'],
+            'message_type' => [
+                'required',
+                Rule::in([
+                    'custom',
+                    'voucher',
+                    'network_back',
+                    'welcome_back',
+                    'maintenance',
+                ]),
+            ],
         ]);
+
+        if (
+            $data['message_type'] === 'voucher'
+            && str_contains($data['message'], '[VOUCHER]')
+        ) {
+            return back()
+                ->withErrors([
+                    'message' => 'Badilisha [VOUCHER] kwa voucher halisi kabla ya kutuma.',
+                ])
+                ->withInput();
+        }
 
         try {
             $normalizedPhone = $phones->normalize($data['phone']);
@@ -142,6 +165,8 @@ class HotspotCustomerController extends Controller
             );
 
             if (
+                $data['message_type'] !== 'voucher'
+                &&
                 $customer->last_sms_at
                 && $customer->last_sms_at
                     ->timezone('Africa/Dar_es_Salaam')

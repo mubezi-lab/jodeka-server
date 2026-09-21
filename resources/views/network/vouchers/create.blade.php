@@ -63,13 +63,46 @@
                 </select>
             </div>
 
+            {{-- Existing Hotspot Customer --}}
+            <div class="mb-5">
+                <label class="block text-sm font-medium mb-2">
+                    Existing Customer
+                </label>
+
+                <select
+                    name="hotspot_customer_id"
+                    id="hotspotCustomer"
+                    class="w-full border rounded-lg px-3 py-2"
+                >
+                    <option value="">
+                        No saved customer
+                    </option>
+
+                    @foreach($customerOptions as $customer)
+                        <option
+                            value="{{ $customer->id }}"
+                            data-name="{{ $customer->name }}"
+                            {{ old('hotspot_customer_id') == $customer->id ? 'selected' : '' }}
+                        >
+                            {{ $customer->name ?: 'No name' }}
+                            — {{ $customer->normalized_phone }}
+                            {{ $customer->active ? '' : '— Archived' }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <p class="mt-2 text-sm text-gray-500">
+                    Ukichagua customer, jina na namba yake vitaandaliwa kwenye Manual SMS baada ya voucher kutengenezwa.
+                </p>
+            </div>
+
             {{-- Customer / Comment --}}
             <div class="mb-6">
                 <label class="block text-sm font-medium mb-2">
                     Customer / Comment
                 </label>
 
-                <input type="text" name="comment" value="{{ old('comment') }}" class="w-full border rounded-lg px-3 py-2"
+                <input type="text" name="comment" id="voucherComment" value="{{ old('comment') }}" class="w-full border rounded-lg px-3 py-2"
                     placeholder="Optional customer name or note">
             </div>
 
@@ -83,4 +116,19 @@
         </form>
 
     </div>
+
+    <script>
+        (() => {
+            const customer = document.getElementById('hotspotCustomer');
+            const comment = document.getElementById('voucherComment');
+
+            customer.addEventListener('change', () => {
+                const option = customer.options[customer.selectedIndex];
+
+                if (customer.value && !comment.value.trim()) {
+                    comment.value = option.dataset.name || '';
+                }
+            });
+        })();
+    </script>
 @endsection
