@@ -32,20 +32,31 @@ class HotspotVoucherSmsService
             );
         }
 
-        $amount = number_format(
-            (float) $payment->amount,
-            0,
-            '.',
-            ','
-        );
+        if ($payment->voucher_sms_kind === 'recovery') {
+            $date = $payment->paid_at
+                ? $payment->paid_at->timezone('Africa/Dar_es_Salaam')->format('d/m/y')
+                : now('Africa/Dar_es_Salaam')->format('d/m/y');
 
-        $message = 'Karibu JODEKA Hotspot. Malipo TZS '
-            . $amount
-            . ' yamepokelewa. Voucher: '
-            . $voucher->username
-            . '. Kifurushi: '
-            . $profile->name
-            . '. Ingia kwa namba uliyolipia. Asante.';
+            $message = 'JODEKA Hotspot inakuomba radhi. Malipo yako ya tarehe '
+                . $date
+                . ' yamepokelewa; endelea kupata huduma kwa voucher '
+                . $voucher->username
+                . '. Karibu kwenye huduma bora ya WiFi.';
+        } else {
+            $amount = number_format((float) $payment->amount, 0, '.', ',');
+
+            $message = 'Karibu JODEKA Hotspot. Malipo TZS '
+                . $amount
+                . ' yamepokelewa. Voucher: '
+                . $voucher->username
+                . '. Kifurushi: '
+                . $profile->name
+                . '. Ingia kwa namba uliyolipia. Asante.';
+        }
+
+        if (mb_strlen($message) > 160) {
+            throw new RuntimeException('Hotspot SMS exceeds the one-SMS 160 character limit.');
+        }
 
         return $this->beem->send([
             [

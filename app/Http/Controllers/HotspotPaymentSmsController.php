@@ -248,6 +248,7 @@ class HotspotPaymentSmsController extends Controller
                 $payment->voucher_id = $voucher->id;
                 $payment->status = 'completed';
                 $payment->voucher_sms_status = 'pending';
+                $payment->voucher_sms_kind = 'purchase';
                 $payment->voucher_sms_error = null;
                 $payment->save();
 
@@ -279,7 +280,11 @@ class HotspotPaymentSmsController extends Controller
                 |--------------------------------------------------------------------------
                 */
 
-                $payment->status = 'voucher_failed';
+                $payment->status = 'waiting_for_router';
+                $payment->voucher_recovery_attempts =
+                    (int) $payment->voucher_recovery_attempts + 1;
+                $payment->voucher_recovery_last_attempt_at = now();
+                $payment->voucher_recovery_error = mb_substr($e->getMessage(), 0, 1000);
                 $payment->save();
 
                 report($e);

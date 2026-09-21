@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\HotspotPayment;
+use App\Services\HotspotPaymentRecoveryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,10 @@ use Throwable;
 
 class HotspotPaymentVerificationController extends Controller
 {
-    public function verify(Request $request): JsonResponse
+    public function verify(
+        Request $request,
+        HotspotPaymentRecoveryService $recovery
+    ): JsonResponse
     {
         $validated = $request->validate([
             'payer_phone' => [
@@ -49,6 +53,31 @@ class HotspotPaymentVerificationController extends Controller
                 'message' =>
                     'Namba ya simu uliyoingiza si sahihi.',
             ], 422);
+        }
+
+        /*
+        | A customer may arrive before the scheduler's next retry. If their
+        | payment is safely stored but lacks a voucher, retry it now.
+        */
+        $waitingPayment = HotspotPayment::query()
+            ->where('payer_phone', $phone)
+            ->whereNull('voucher_id')
+            ->whereNotNull('hotspot_profile_id')
+            ->whereIn('status', ['pending', 'voucher_failed', 'waiting_for_router'])
+            ->latest('paid_at')
+            ->latest('id')
+            ->first();
+
+        if ($waitingPayment) {
+            $result = $recovery->recover($waitingPayment);
+
+            if (! $result['recovered'] && ! $result['already_completed']) {
+                return response()->json([
+                    'success' => false,
+                    'payment_received' => true,
+                    'message' => 'Malipo yako yamepokelewa lakini huduma bado haijawa tayari. Usilipe tena; jaribu baada ya muda mfupi.',
+                ], 409);
+            }
         }
 
         try {

@@ -51,5 +51,12 @@ class HotspotCustomerServiceTest extends TestCase
         $this->assertSame(1, $customer->total_payments);
         $this->assertSame('500.00', $customer->total_amount);
         $this->assertSame($customer->id, $payment->fresh()->hotspot_customer_id);
+
+        $customer->update(['active' => false, 'sms_allowed' => false]);
+        $service->syncPayment($payment->fresh());
+
+        $this->assertTrue($customer->fresh()->active);
+        $this->assertFalse($customer->fresh()->sms_allowed);
+        $this->assertSame(1, $customer->fresh()->total_payments);
     }
 }

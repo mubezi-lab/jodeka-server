@@ -351,6 +351,17 @@ class HotspotVoucherController extends Controller
 
             $voucher->save();
 
+            if ($voucher->first_login_at) {
+                \App\Models\HotspotPayment::query()
+                    ->where('voucher_id', $voucher->id)
+                    ->whereNull('claimed_at')
+                    ->update([
+                        'claimed_at' => $voucher->first_login_at,
+                        'claimed_by_mac' => $voucher->used_by_mac,
+                        'claimed_by_ip' => $voucher->used_by_ip,
+                    ]);
+            }
+
             /*
             |--------------------------------------------------------------------------
             | CALCULATE LIVE USAGE
@@ -1048,6 +1059,17 @@ class HotspotVoucherController extends Controller
                         now();
 
                     $voucher->save();
+
+                    if ($voucher->first_login_at) {
+                        \App\Models\HotspotPayment::query()
+                            ->where('voucher_id', $voucher->id)
+                            ->whereNull('claimed_at')
+                            ->update([
+                                'claimed_at' => $voucher->first_login_at,
+                                'claimed_by_mac' => $voucher->used_by_mac,
+                                'claimed_by_ip' => $voucher->used_by_ip,
+                            ]);
+                    }
 
                     $updated++;
                 }

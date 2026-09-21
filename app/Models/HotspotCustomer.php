@@ -9,13 +9,16 @@ class HotspotCustomer extends Model
 {
     protected $fillable = [
         'name', 'phone', 'normalized_phone', 'first_paid_at', 'last_paid_at',
-        'total_payments', 'total_amount', 'active', 'sms_allowed', 'last_sms_at',
+        'total_payments', 'total_amount', 'active', 'archived_at', 'archive_reason',
+        'active_override_until', 'sms_allowed', 'last_sms_at',
     ];
 
     protected $casts = [
         'first_paid_at' => 'datetime',
         'last_paid_at' => 'datetime',
         'last_sms_at' => 'datetime',
+        'archived_at' => 'datetime',
+        'active_override_until' => 'datetime',
         'total_amount' => 'decimal:2',
         'active' => 'boolean',
         'sms_allowed' => 'boolean',

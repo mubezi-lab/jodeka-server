@@ -510,6 +510,16 @@ Route::middleware([
         [HotspotCustomerController::class, 'toggleSms']
     )->name('hotspot-customers.sms.toggle');
 
+    Route::patch(
+        '/hotspot-customers/{hotspotCustomer}/active',
+        [HotspotCustomerController::class, 'toggleActive']
+    )->name('hotspot-customers.active.toggle');
+
+    Route::post(
+        '/hotspot-payments/{hotspotPayment}/retry-voucher',
+        [HotspotCustomerController::class, 'retryPayment']
+    )->name('hotspot-payments.retry-voucher');
+
     Route::post(
         '/hotspot-vouchers/{hotspotVoucher}/cancel',
         [HotspotVoucherController::class, 'cancel']

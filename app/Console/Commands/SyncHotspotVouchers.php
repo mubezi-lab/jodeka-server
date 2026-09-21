@@ -5,7 +5,9 @@ namespace App\Console\Commands;
 use App\Models\HotspotProfile;
 use App\Models\HotspotVoucher;
 use App\Models\NetworkRouter;
+use App\Services\HotspotPaymentRecoveryService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use RouterOS\Client;
 use RouterOS\Query;
@@ -448,6 +450,17 @@ class SyncHotspotVouchers extends Command
                     $voucher->last_synced_at = now();
 
                     $voucher->save();
+
+                    if ($voucher->first_login_at) {
+                        \App\Models\HotspotPayment::query()
+                            ->where('voucher_id', $voucher->id)
+                            ->whereNull('claimed_at')
+                            ->update([
+                                'claimed_at' => $voucher->first_login_at,
+                                'claimed_by_mac' => $voucher->used_by_mac,
+                                'claimed_by_ip' => $voucher->used_by_ip,
+                            ]);
+                    }
 
                     $updated++;
                 }
@@ -909,7 +922,19 @@ class SyncHotspotVouchers extends Command
                     . $router->name
                 );
 
+                // Recovery may run only after this existing sync has proved
+                // that JODEKA can currently communicate with this router.
+                Cache::put(
+                    HotspotPaymentRecoveryService::routerReadyCacheKey($router->id),
+                    true,
+                    now()->addSeconds(90)
+                );
+
             } catch (\Throwable $e) {
+                Cache::forget(
+                    HotspotPaymentRecoveryService::routerReadyCacheKey($router->id)
+                );
+
                 $this->error(
                     'Router sync failed ['
                     . $router->name

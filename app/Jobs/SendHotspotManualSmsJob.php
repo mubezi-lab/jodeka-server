@@ -24,9 +24,22 @@ class SendHotspotManualSmsJob implements ShouldQueue
 
     public function handle(HotspotCustomerBroadcastSmsService $sms): void
     {
-        $record = HotspotManualSmsMessage::find($this->messageId);
+        $record = HotspotManualSmsMessage::with('customer')->find($this->messageId);
 
         if (! $record || $record->status === 'sent') {
+            return;
+        }
+
+        if (
+            $record->customer?->last_sms_at
+            && $record->customer->last_sms_at
+                ->timezone('Africa/Dar_es_Salaam')
+                ->isSameDay(now('Africa/Dar_es_Salaam'))
+        ) {
+            $record->update([
+                'status' => 'skipped',
+                'error' => 'Customer already received an SMS today.',
+            ]);
             return;
         }
 
@@ -45,6 +58,7 @@ class SendHotspotManualSmsJob implements ShouldQueue
                 'error' => null,
                 'response' => $response,
             ]);
+            $record->customer?->update(['last_sms_at' => now()]);
         } catch (Throwable $e) {
             $record->update([
                 'status' => 'failed',

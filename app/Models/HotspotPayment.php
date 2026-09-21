@@ -22,11 +22,16 @@ class HotspotPayment extends Model
         'claimed_by_mac',
         'claimed_by_ip',
         'voucher_sms_status',
+        'voucher_sms_kind',
         'voucher_sms_sent_at',
         'voucher_sms_failed_at',
         'voucher_sms_error',
         'voucher_sms_attempts',
         'voucher_sms_response',
+        'voucher_recovery_attempts',
+        'voucher_recovery_last_attempt_at',
+        'voucher_recovery_completed_at',
+        'voucher_recovery_error',
         'hotspot_customer_id',
     ];
 
@@ -37,6 +42,8 @@ class HotspotPayment extends Model
         'voucher_sms_sent_at' => 'datetime',
         'voucher_sms_failed_at' => 'datetime',
         'voucher_sms_response' => 'array',
+        'voucher_recovery_last_attempt_at' => 'datetime',
+        'voucher_recovery_completed_at' => 'datetime',
     ];
 
     public function profile(): BelongsTo

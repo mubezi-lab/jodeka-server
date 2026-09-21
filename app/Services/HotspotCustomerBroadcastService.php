@@ -23,6 +23,17 @@ class HotspotCustomerBroadcastService
             ->chunkById(100, function ($customers) use ($type, $date, $message, &$result) {
                 foreach ($customers as $customer) {
                     $result['eligible']++;
+
+                    if (
+                        $customer->last_sms_at
+                        && $customer->last_sms_at
+                            ->timezone('Africa/Dar_es_Salaam')
+                            ->isSameDay(now('Africa/Dar_es_Salaam'))
+                    ) {
+                        $result['already_sent_today']++;
+                        continue;
+                    }
+
                     $record = HotspotCustomerMessage::firstOrCreate([
                         'hotspot_customer_id' => $customer->id,
                         'campaign_date' => $date,

@@ -30,6 +30,19 @@ class SendHotspotCustomerBroadcastJob implements ShouldQueue
             return;
         }
 
+        if (
+            $record->customer->last_sms_at
+            && $record->customer->last_sms_at
+                ->timezone('Africa/Dar_es_Salaam')
+                ->isSameDay(now('Africa/Dar_es_Salaam'))
+        ) {
+            $record->update([
+                'status' => 'skipped',
+                'error' => 'Customer already received an SMS today.',
+            ]);
+            return;
+        }
+
         $record->update([
             'status' => 'processing',
             'attempts' => (int) $record->attempts + 1,

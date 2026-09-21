@@ -27,8 +27,24 @@ class HotspotCustomerService
         return DB::transaction(function () use ($payment, $phone) {
             $lockedPayment = HotspotPayment::lockForUpdate()->find($payment->id);
 
-            if (! $lockedPayment || $lockedPayment->hotspot_customer_id) {
-                return $lockedPayment?->customer;
+            if (! $lockedPayment) {
+                return null;
+            }
+
+            if ($lockedPayment->hotspot_customer_id) {
+                $customer = $lockedPayment->customer;
+                if ($customer && ! $customer->active) {
+                    // A new successful payment automatically restores an archived
+                    // customer, while preserving their explicit SMS opt-out.
+                    $customer->update([
+                        'active' => true,
+                        'archived_at' => null,
+                        'archive_reason' => null,
+                        'active_override_until' => null,
+                    ]);
+                }
+
+                return $customer;
             }
 
             $customer = HotspotCustomer::where('normalized_phone', $phone)
@@ -51,6 +67,10 @@ class HotspotCustomerService
 
             $customer->phone = $lockedPayment->payer_phone;
             $customer->name = $lockedPayment->payer_name ?: $customer->name;
+            $customer->active = true;
+            $customer->archived_at = null;
+            $customer->archive_reason = null;
+            $customer->active_override_until = null;
             $customer->first_paid_at = $customer->first_paid_at ?: $lockedPayment->paid_at;
 
             if (! $customer->last_paid_at || $lockedPayment->paid_at?->gt($customer->last_paid_at)) {

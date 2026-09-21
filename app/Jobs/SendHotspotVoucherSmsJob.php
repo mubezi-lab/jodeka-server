@@ -61,6 +61,10 @@ class SendHotspotVoucherSmsJob implements ShouldQueue
             $payment->voucher_sms_error = null;
             $payment->voucher_sms_response = $response;
             $payment->save();
+
+            if ($payment->customer) {
+                $payment->customer->update(['last_sms_at' => now()]);
+            }
         } catch (Throwable $e) {
             $payment->voucher_sms_status = 'failed';
             $payment->voucher_sms_failed_at = now();
