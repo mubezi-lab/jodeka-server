@@ -31,6 +31,7 @@ class HotspotCustomerController extends Controller
             ->when($customerStatus === 'archived', fn ($query) => $query->where('active', false))
             ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
                 $query->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('payment_name', 'like', '%' . $search . '%')
                     ->orWhere('phone', 'like', '%' . $search . '%')
                     ->orWhere('normalized_phone', 'like', '%' . $search . '%');
             }))
@@ -88,7 +89,7 @@ class HotspotCustomerController extends Controller
             ->orderByDesc('active')
             ->orderBy('name')
             ->orderBy('normalized_phone')
-            ->get(['id', 'name', 'normalized_phone', 'active']);
+            ->get(['id', 'name', 'payment_name', 'name_source', 'normalized_phone', 'active']);
         $manualSmsPrefill = session('manual_sms_prefill', []);
 
         return view('network.hotspot-customers.index', compact(
@@ -166,6 +167,7 @@ class HotspotCustomerController extends Controller
                 ['normalized_phone' => $normalizedPhone],
                 [
                     'name' => trim($data['name']),
+                    'name_source' => 'manual',
                     'phone' => $data['phone'],
                     'total_payments' => 0,
                     'total_amount' => 0,

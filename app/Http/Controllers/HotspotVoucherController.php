@@ -687,6 +687,8 @@ class HotspotVoucherController extends Controller
                 ->get([
                     'id',
                     'name',
+                    'payment_name',
+                    'name_source',
                     'normalized_phone',
                     'active',
                 ]);
@@ -724,7 +726,7 @@ class HotspotVoucherController extends Controller
         $comment = trim((string) ($data['comment'] ?? ''));
 
         if ($customer && $comment === '') {
-            $comment = trim((string) $customer->name);
+            $comment = trim((string) $customer->display_name);
         }
 
         $profile =

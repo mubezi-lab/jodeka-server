@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class HotspotCustomer extends Model
 {
     protected $fillable = [
-        'name', 'phone', 'normalized_phone', 'first_paid_at', 'last_paid_at',
+        'name', 'payment_name', 'name_source', 'phone', 'normalized_phone',
+        'first_paid_at', 'last_paid_at',
         'total_payments', 'total_amount', 'active', 'archived_at', 'archive_reason',
         'active_override_until', 'sms_allowed', 'last_sms_at',
     ];
@@ -27,5 +28,21 @@ class HotspotCustomer extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(HotspotCustomerMessage::class);
+    }
+
+    public function getDisplayNameAttribute(): string
+    {
+        $name = trim((string) $this->name);
+        $paymentName = trim((string) $this->payment_name);
+
+        if ($name === '') {
+            return $paymentName !== '' ? $paymentName : $this->normalized_phone;
+        }
+
+        if ($paymentName === '' || strcasecmp($name, $paymentName) === 0) {
+            return $name;
+        }
+
+        return $name . ' (' . $paymentName . ')';
     }
 }

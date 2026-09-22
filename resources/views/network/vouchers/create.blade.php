@@ -81,10 +81,10 @@
                     @foreach($customerOptions as $customer)
                         <option
                             value="{{ $customer->id }}"
-                            data-name="{{ $customer->name }}"
+                            data-name="{{ $customer->display_name }}"
                             {{ old('hotspot_customer_id') == $customer->id ? 'selected' : '' }}
                         >
-                            {{ $customer->name ?: 'No name' }}
+                            {{ $customer->display_name }}
                             — {{ $customer->normalized_phone }}
                             {{ $customer->active ? '' : '— Archived' }}
                         </option>
