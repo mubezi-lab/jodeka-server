@@ -6,6 +6,8 @@ use App\Http\Controllers\HotspotVoucherController;
 use App\Http\Controllers\HotspotCustomerController;
 use App\Jobs\SendHotspotManualSmsJob;
 use App\Models\HotspotCustomer;
+use App\Models\HotspotCustomerMessage;
+use App\Services\HotspotCustomerBroadcastService;
 use App\Services\HotspotPhoneService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -36,6 +38,62 @@ class HotspotVoucherCustomerSelectionTest extends TestCase
             '255659840000',
             $customerOptions->firstWhere('id', $customer->id)->normalized_phone
         );
+    }
+
+    public function test_manual_sms_contacts_include_archived_customers(): void
+    {
+        $customer = HotspotCustomer::create([
+            'name' => 'ARCHIVED CUSTOMER',
+            'phone' => '0712345678',
+            'normalized_phone' => '255712345678',
+            'total_payments' => 1,
+            'total_amount' => 500,
+            'active' => false,
+            'sms_allowed' => true,
+            'last_paid_at' => now()->subDays(5),
+        ]);
+
+        $request = Request::create('/hotspot-customers?status=all', 'GET');
+        $view = app(HotspotCustomerController::class)->index($request);
+
+        $this->assertTrue($view->getData()['contactOptions']->contains('id', $customer->id));
+    }
+
+    public function test_recent_archived_audience_can_be_queued_manually(): void
+    {
+        Queue::fake();
+
+        $recent = HotspotCustomer::create([
+            'name' => 'RECENT ARCHIVED',
+            'phone' => '0712345678',
+            'normalized_phone' => '255712345678',
+            'total_payments' => 1,
+            'total_amount' => 500,
+            'active' => false,
+            'sms_allowed' => true,
+            'last_paid_at' => now()->subDays(5),
+        ]);
+
+        HotspotCustomer::create([
+            'name' => 'OLD ARCHIVED',
+            'phone' => '0711111111',
+            'normalized_phone' => '255711111111',
+            'total_payments' => 1,
+            'total_amount' => 500,
+            'active' => false,
+            'sms_allowed' => true,
+            'last_paid_at' => now()->subDays(40),
+        ]);
+
+        $result = app(HotspotCustomerBroadcastService::class)
+            ->queue('network_back', 'recent_archived');
+
+        $this->assertSame(1, $result['queued']);
+        $this->assertDatabaseHas('hotspot_customer_messages', [
+            'hotspot_customer_id' => $recent->id,
+            'status' => 'pending',
+        ]);
+        $this->assertSame(1, HotspotCustomerMessage::count());
     }
 
     public function test_manual_sms_page_contains_editable_voucher_template(): void

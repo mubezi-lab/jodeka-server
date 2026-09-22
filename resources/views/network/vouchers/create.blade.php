@@ -92,7 +92,7 @@
                 </select>
 
                 <p class="mt-2 text-sm text-gray-500">
-                    Ukichagua customer, jina na namba yake vitaandaliwa kwenye Manual SMS baada ya voucher kutengenezwa.
+                    Ukichagua customer, voucher ikitengenezwa SMS itatumwa automatically kwenye namba yake.
                 </p>
             </div>
 

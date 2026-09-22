@@ -28,6 +28,9 @@ class HotspotPayment extends Model
         'voucher_sms_error',
         'voucher_sms_attempts',
         'voucher_sms_response',
+        'voucher_sms_request_id',
+        'voucher_sms_delivery_status',
+        'voucher_sms_delivered_at',
         'voucher_recovery_attempts',
         'voucher_recovery_last_attempt_at',
         'voucher_recovery_completed_at',
@@ -42,6 +45,7 @@ class HotspotPayment extends Model
         'voucher_sms_sent_at' => 'datetime',
         'voucher_sms_failed_at' => 'datetime',
         'voucher_sms_response' => 'array',
+        'voucher_sms_delivered_at' => 'datetime',
         'voucher_recovery_last_attempt_at' => 'datetime',
         'voucher_recovery_completed_at' => 'datetime',
     ];

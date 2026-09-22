@@ -9,16 +9,30 @@ use Throwable;
 
 class HotspotCustomerBroadcastService
 {
-    public function queue(string $type, array $customerIds): array
+    public function queue(string $type, string $audience, array $customerIds = []): array
     {
         $date = now('Africa/Dar_es_Salaam')->toDateString();
         $message = HotspotCustomerBroadcastSmsService::message($type);
         $result = ['eligible' => 0, 'queued' => 0, 'already_sent_today' => 0];
 
-        HotspotCustomer::where('active', true)
+        HotspotCustomer::query()
             ->where('sms_allowed', true)
             ->whereNotNull('normalized_phone')
-            ->whereKey($customerIds)
+            ->when(
+                $audience === 'selected',
+                fn ($query) => $query->whereKey($customerIds)
+            )
+            ->when(
+                $audience === 'active',
+                fn ($query) => $query->where('active', true)
+            )
+            ->when(
+                $audience === 'recent_archived',
+                fn ($query) => $query
+                    ->where('active', false)
+                    ->whereNotNull('last_paid_at')
+                    ->where('last_paid_at', '>=', now()->subDays(30))
+            )
             ->orderBy('id')
             ->chunkById(100, function ($customers) use ($type, $date, $message, &$result) {
                 foreach ($customers as $customer) {

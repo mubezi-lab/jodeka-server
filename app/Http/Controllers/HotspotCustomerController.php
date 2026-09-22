@@ -41,6 +41,11 @@ class HotspotCustomerController extends Controller
         $customerCount = HotspotCustomer::where('active', true)->count();
         $smsEligibleCount = HotspotCustomer::where('active', true)
             ->where('sms_allowed', true)->count();
+        $recentArchivedCount = HotspotCustomer::where('active', false)
+            ->where('sms_allowed', true)
+            ->whereNotNull('last_paid_at')
+            ->where('last_paid_at', '>=', now()->subDays(30))
+            ->count();
         $messageStats = HotspotCustomerMessage::whereDate(
             'campaign_date',
             now('Africa/Dar_es_Salaam')->toDateString()
@@ -80,16 +85,16 @@ class HotspotCustomerController extends Controller
             $payment->setAttribute('recovery_usage_status', $usageStatus);
         });
         $contactOptions = HotspotCustomer::query()
-            ->where('active', true)
+            ->orderByDesc('active')
             ->orderBy('name')
             ->orderBy('normalized_phone')
-            ->get(['id', 'name', 'normalized_phone']);
+            ->get(['id', 'name', 'normalized_phone', 'active']);
         $manualSmsPrefill = session('manual_sms_prefill', []);
 
         return view('network.hotspot-customers.index', compact(
             'customers', 'customerCount', 'smsEligibleCount', 'messageStats',
             'manualMessages', 'contactOptions', 'recoveryPayments', 'search',
-            'customerStatus', 'manualSmsPrefill'
+            'customerStatus', 'manualSmsPrefill', 'recentArchivedCount'
         ));
     }
 
@@ -99,11 +104,16 @@ class HotspotCustomerController extends Controller
     ): RedirectResponse {
         $data = $request->validate([
             'message_type' => ['required', Rule::in(['network_back', 'welcome_back'])],
-            'customer_ids' => ['required', 'array', 'min:1'],
+            'audience' => ['required', Rule::in(['selected', 'active', 'recent_archived'])],
+            'customer_ids' => ['required_if:audience,selected', 'array', 'min:1'],
             'customer_ids.*' => ['integer', 'distinct', 'exists:hotspot_customers,id'],
         ]);
 
-        $result = $service->queue($data['message_type'], $data['customer_ids']);
+        $result = $service->queue(
+            $data['message_type'],
+            $data['audience'],
+            $data['customer_ids'] ?? []
+        );
 
         return back()->with(
             $result['queued'] > 0 ? 'success' : 'error',
@@ -180,6 +190,7 @@ class HotspotCustomerController extends Controller
                 'phone' => $data['phone'],
                 'normalized_phone' => $normalizedPhone,
                 'message' => trim($data['message']),
+                'message_type' => $data['message_type'],
                 'status' => 'pending',
                 'requested_by' => $request->user()?->id,
             ]);

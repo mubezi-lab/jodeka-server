@@ -26,12 +26,13 @@ class SendHotspotManualSmsJob implements ShouldQueue
     {
         $record = HotspotManualSmsMessage::with('customer')->find($this->messageId);
 
-        if (! $record || $record->status === 'sent') {
+        if (! $record || in_array($record->status, ['sent', 'delivered'], true)) {
             return;
         }
 
         if (
-            $record->customer?->last_sms_at
+            $record->message_type !== 'voucher'
+            && $record->customer?->last_sms_at
             && $record->customer->last_sms_at
                 ->timezone('Africa/Dar_es_Salaam')
                 ->isSameDay(now('Africa/Dar_es_Salaam'))
@@ -57,6 +58,10 @@ class SendHotspotManualSmsJob implements ShouldQueue
                 'failed_at' => null,
                 'error' => null,
                 'response' => $response,
+                'beem_request_id' => isset($response['request_id'])
+                    ? (string) $response['request_id']
+                    : null,
+                'delivery_status' => 'submitted',
             ]);
             $record->customer?->update(['last_sms_at' => now()]);
         } catch (Throwable $e) {

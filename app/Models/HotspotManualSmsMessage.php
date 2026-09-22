@@ -8,13 +8,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class HotspotManualSmsMessage extends Model
 {
     protected $fillable = [
-        'hotspot_customer_id', 'phone', 'normalized_phone', 'message', 'status', 'attempts',
-        'requested_by', 'sent_at', 'failed_at', 'error', 'response',
+        'hotspot_customer_id', 'hotspot_voucher_id', 'message_type', 'phone',
+        'normalized_phone', 'message', 'status', 'attempts', 'requested_by',
+        'sent_at', 'failed_at', 'error', 'response', 'beem_request_id',
+        'delivery_status', 'delivered_at',
     ];
 
     protected $casts = [
         'sent_at' => 'datetime',
         'failed_at' => 'datetime',
+        'delivered_at' => 'datetime',
         'response' => 'array',
     ];
 

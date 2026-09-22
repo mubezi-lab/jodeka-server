@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\HotspotCustomer;
+use App\Models\HotspotManualSmsMessage;
 use App\Models\HotspotProfile;
 use App\Models\HotspotVoucher;
 use App\Models\NetworkRouter;
 use App\Services\HotspotCustomerInvitationService;
+use App\Jobs\SendHotspotManualSmsJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use RouterOS\Client;
@@ -816,24 +818,56 @@ class HotspotVoucherController extends Controller
             ]);
 
             if ($customer) {
-                return redirect()
-                    ->route('hotspot-customers.index')
-                    ->with([
-                        'success' =>
-                            'Voucher generated successfully: '
-                            . $username
-                            . '. Kagua ujumbe kisha utume SMS.',
-                        'manual_sms_prefill' => [
-                            'customer_id' => $customer->id,
-                            'name' => $customer->name,
-                            'phone' => $customer->normalized_phone,
+                try {
+                    $customer->update([
+                        'active' => true,
+                        'archived_at' => null,
+                        'archive_reason' => null,
+                        'active_override_until' => now()->addDays(3),
+                    ]);
+
+                    $sms = HotspotManualSmsMessage::firstOrCreate(
+                        ['hotspot_voucher_id' => $voucher->id],
+                        [
+                            'hotspot_customer_id' => $customer->id,
                             'message_type' => 'voucher',
-                            'message' =>
-                                'Karibu JODEKA Hotspot, voucher yako ni '
+                            'phone' => $customer->normalized_phone,
+                            'normalized_phone' => $customer->normalized_phone,
+                            'message' => 'Karibu JODEKA Hotspot, voucher yako ni '
                                 . $voucher->username
                                 . '. Endelea kupata huduma bora ya WiFi.',
-                        ],
-                    ]);
+                            'status' => 'pending',
+                            'requested_by' => $request->user()?->id,
+                        ]
+                    );
+
+                    if ($sms->wasRecentlyCreated) {
+                        SendHotspotManualSmsJob::dispatch($sms->id);
+                    }
+                } catch (\Throwable $smsError) {
+                    report($smsError);
+
+                    return redirect()
+                        ->route('hotspot-customers.index')
+                        ->with(
+                            'error',
+                            'Voucher generated successfully: '
+                                . $username
+                                . ', lakini SMS haikuwekwa kwenye foleni: '
+                                . $smsError->getMessage()
+                        );
+                }
+
+                return redirect()
+                    ->route('hotspot-customers.index')
+                    ->with(
+                        'success',
+                        'Voucher generated successfully: '
+                            . $username
+                            . '. SMS imewekwa kwenye foleni kwenda '
+                            . $customer->normalized_phone
+                            . '.'
+                    );
             }
 
             return redirect()

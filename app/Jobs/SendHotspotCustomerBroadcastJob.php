@@ -26,7 +26,7 @@ class SendHotspotCustomerBroadcastJob implements ShouldQueue
     {
         $record = HotspotCustomerMessage::with('customer')->find($this->messageId);
 
-        if (! $record || $record->status === 'sent' || ! $record->customer) {
+        if (! $record || in_array($record->status, ['sent', 'delivered'], true) || ! $record->customer) {
             return;
         }
 
@@ -57,6 +57,10 @@ class SendHotspotCustomerBroadcastJob implements ShouldQueue
                 'failed_at' => null,
                 'error' => null,
                 'response' => $response,
+                'beem_request_id' => isset($response['request_id'])
+                    ? (string) $response['request_id']
+                    : null,
+                'delivery_status' => 'submitted',
             ]);
             $record->customer->update(['last_sms_at' => now()]);
         } catch (Throwable $e) {
