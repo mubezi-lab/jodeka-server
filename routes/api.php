@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\LivestockApiController;
 use App\Http\Controllers\Api\LoanApiController;
 use App\Http\Controllers\Api\SavingApiController;
 use App\Http\Controllers\Api\BagambakamoSmsController;
+use App\Http\Controllers\Api\BpayCallbackController;
+use App\Http\Controllers\Api\BpayCheckoutController;
 
 use App\Http\Controllers\HotspotPaymentSmsController;
 use App\Http\Controllers\HotspotPaymentVerificationController;
@@ -71,6 +73,38 @@ Route::post('/hotspot/payments/verify', [
     HotspotPaymentVerificationController::class,
     'verify'
 ]);
+
+/*
+|--------------------------------------------------------------------------
+| BEEM BPAY CHECKOUT
+|--------------------------------------------------------------------------
+|
+| Starts a new Beem BPAY Checkout transaction.
+|
+| Final URL:
+| /api/bpay/checkout
+|
+*/
+
+Route::post('/bpay/checkout', [
+    BpayCheckoutController::class,
+    'store'
+])->name('bpay.checkout');
+
+/*
+|--------------------------------------------------------------------------
+| BEEM BPAY CALLBACK
+|--------------------------------------------------------------------------
+|
+| Receives payment status callbacks from Beem BPAY Checkout.
+|
+| Final URL:
+| https://jodeka.co.tz/api/bpay/callback
+|
+*/
+
+Route::post('/bpay/callback', BpayCallbackController::class)
+    ->name('bpay.callback');
 
 /*
 |--------------------------------------------------------------------------

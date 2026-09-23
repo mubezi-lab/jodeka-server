@@ -64,6 +64,22 @@ return [
         'sender' => env('BEEM_SENDER'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | BEEM BPAY
+    |--------------------------------------------------------------------------
+    |
+    | Used for Beem Bpay Checkout API integration.
+    |
+    */
+
+    'bpay' => [
+        'api_key' => env('BEEM_BPAY_API_KEY'),
+        'secret_key' => env('BEEM_BPAY_SECRET_KEY'),
+        'secure_token' => env('BEEM_BPAY_SECURE_TOKEN'),
+        'base_url' => env('BEEM_BPAY_BASE_URL', 'https://checkout.beem.africa'),
+    ],
+
     'bagambakamo' => [
         'forwarder_member_id' => env('BAGAMBAKAMO_FORWARDER_MEMBER_ID'),
     ],
