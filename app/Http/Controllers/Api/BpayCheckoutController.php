@@ -27,11 +27,22 @@ class BpayCheckoutController extends Controller
 
         $transactionId = (string) Str::uuid();
 
+        /*
+        |--------------------------------------------------------------------------
+        | BPAY Reference Number
+        |--------------------------------------------------------------------------
+        |
+        | Beem requires the reference number to match the configured
+        | checkout route pattern "MUBEZI*".
+        |
+        | Example:
+        | MUBEZI-20260924131542
+        |
+        */
+
         $referenceNumber =
             'MUBEZI-' .
-            now()->format('YmdHis') .
-            '-' .
-            strtoupper(Str::random(6));
+            now()->format('YmdHis');
 
         $transaction = BpayTransaction::create([
             'transaction_id' => $transactionId,
