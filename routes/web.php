@@ -546,6 +546,11 @@ Route::middleware([
         [HotspotPermanentUserController::class, 'toggle']
     )->name('hotspot-permanent-users.toggle');
 
+    Route::patch(
+        '/hotspot-permanent-users/{hotspotPermanentUser}/device',
+        [HotspotPermanentUserController::class, 'changeDevice']
+    )->name('hotspot-permanent-users.device.update');
+
     Route::post(
         '/hotspot-permanent-users/{hotspotPermanentUser}/payments',
         [HotspotPermanentUserController::class, 'payment']

@@ -119,4 +119,39 @@ class HotspotPermanentBindingService
                 ->read();
         }
     }
+
+    public function replaceDevice(
+        NetworkRouter $router,
+        string $oldMacAddress,
+        string $newMacAddress,
+        string $name,
+        string $userType
+    ): void {
+        $oldMacAddress = strtoupper(trim($oldMacAddress));
+        $newMacAddress = strtoupper(trim($newMacAddress));
+
+        if ($oldMacAddress === $newMacAddress) {
+            $this->ensureBypassed($router, $newMacAddress, $name, $userType);
+
+            return;
+        }
+
+        // Configure the replacement first so the user is not left without
+        // access if adding the new device fails.
+        $this->ensureBypassed($router, $newMacAddress, $name, $userType);
+
+        try {
+            $this->removeBypassAndDisconnect($router, $oldMacAddress);
+        } catch (\Throwable $exception) {
+            // Avoid leaving two devices bypassed when removal of the old one
+            // fails. Best-effort cleanup must not hide the original failure.
+            try {
+                $this->removeBypassAndDisconnect($router, $newMacAddress);
+            } catch (\Throwable) {
+                // The original exception contains the operation that failed.
+            }
+
+            throw $exception;
+        }
+    }
 }

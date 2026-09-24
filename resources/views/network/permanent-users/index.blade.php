@@ -26,7 +26,8 @@
     label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:10px;background:#fff}
     .form-action{display:flex;align-items:end}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:1100px}th,td{padding:12px 14px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:13px}th{background:#f8fafc;font-size:11px;text-transform:uppercase;color:#475569}
     .pill{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}.online{background:#dcfce7;color:#047857}.offline{background:#e2e8f0;color:#475569}.staff{background:#dbeafe;color:#1d4ed8}.customer{background:#fef3c7;color:#a16207}.disabled{background:#fee2e2;color:#b91c1c}
-    .money{font-weight:800;color:#b45309}.muted{color:#64748b}.row-actions{display:flex;gap:7px;align-items:center}.pay-form{display:flex;gap:6px}.pay-form input{width:90px}
+    .money{font-weight:800;color:#b45309}.muted{color:#64748b}.row-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.pay-form{display:flex;gap:6px}.pay-form input{width:90px}
+    .device-change summary{list-style:none}.device-change summary::-webkit-details-marker{display:none}.device-form{width:300px;margin-top:8px;padding:12px;background:#fff;border:1px solid #cbd5e1;border-radius:10px}.device-form p{margin:0 0 9px;font-size:12px}.device-form .field{margin-bottom:8px}.device-form-actions{display:flex;gap:7px;justify-content:flex-end}
     @media(max-width:1100px){.form-grid{grid-template-columns:repeat(2,minmax(150px,1fr))}}@media(max-width:650px){.form-grid{grid-template-columns:1fr}}
 </style>
 
@@ -89,6 +90,17 @@
                                 @if($user->user_type === 'daily_customer')
                                 <form class="pay-form" method="POST" action="{{ route('hotspot-permanent-users.payments.store', $user) }}">@csrf<input class="field" type="number" name="amount" min="1" value="500" required><button class="btn btn-green" type="submit">Pay</button></form>
                                 @endif
+                                <details class="device-change">
+                                    <summary class="btn btn-dark">Change Device</summary>
+                                    <form class="device-form" method="POST" action="{{ route('hotspot-permanent-users.device.update', $user) }}" onsubmit="return confirm('Badilisha device hii? MAC ya zamani itaondolewa MikroTik na MAC mpya itawezeshwa.')">
+                                        @csrf
+                                        @method('PATCH')
+                                        <p><strong>{{ $user->name }}</strong><br><span class="muted">Old MAC: {{ $user->mac_address }}</span></p>
+                                        <label for="mac_address_{{ $user->id }}">New MAC Address</label>
+                                        <input id="mac_address_{{ $user->id }}" class="field" name="mac_address" placeholder="AA:BB:CC:DD:EE:FF" pattern="([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}" required>
+                                        <div class="device-form-actions"><button class="btn btn-primary" type="submit">Save New Device</button></div>
+                                    </form>
+                                </details>
                                 <form method="POST" action="{{ route('hotspot-permanent-users.toggle', $user) }}" onsubmit="return confirm('{{ $user->enabled ? 'Deactivate this user and remove MikroTik internet bypass? Their history will remain.' : 'Reactivate this user and restore MikroTik internet bypass?' }}')">@csrf @method('PATCH')<button class="btn {{ $user->enabled ? 'btn-danger' : 'btn-green' }}" type="submit">{{ $user->enabled ? 'Deactivate' : 'Reactivate' }}</button></form>
                             </div>
                         </td>

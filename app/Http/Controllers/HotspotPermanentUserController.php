@@ -171,6 +171,67 @@ class HotspotPermanentUserController extends Controller
         }
     }
 
+    public function changeDevice(
+        Request $request,
+        HotspotPermanentUser $hotspotPermanentUser,
+        HotspotPermanentBindingService $bindings
+    ): RedirectResponse {
+        $data = $request->validate([
+            'mac_address' => [
+                'required',
+                'regex:/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/',
+                Rule::unique('hotspot_permanent_users', 'mac_address')
+                    ->where(fn ($query) => $query->where(
+                        'network_router_id',
+                        $hotspotPermanentUser->network_router_id
+                    ))
+                    ->ignore($hotspotPermanentUser->id),
+            ],
+        ]);
+
+        $router = $hotspotPermanentUser->router;
+
+        if (! $router || ! $router->enabled) {
+            return back()->with(
+                'error',
+                'Router ya permanent user haipo au imezimwa; MAC haijabadilishwa.'
+            );
+        }
+
+        $oldMacAddress = strtoupper($hotspotPermanentUser->mac_address);
+        $newMacAddress = strtoupper($data['mac_address']);
+
+        try {
+            $bindings->replaceDevice(
+                $router,
+                $oldMacAddress,
+                $newMacAddress,
+                $hotspotPermanentUser->name,
+                $hotspotPermanentUser->user_type
+            );
+
+            $hotspotPermanentUser->update([
+                'mac_address' => $newMacAddress,
+                'enabled' => true,
+                'is_online' => false,
+                'last_ip' => null,
+                'last_seen_at' => null,
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->with(
+                'error',
+                'MikroTik haijakamilisha kubadili device. MAC na taarifa za permanent user hazijabadilishwa.'
+            );
+        }
+
+        return back()->with(
+            'success',
+            'Device ya ' . $hotspotPermanentUser->name . ' imebadilishwa. MAC ya zamani imeondolewa na MAC mpya imewezeshwa.'
+        );
+    }
+
     public function payment(
         Request $request,
         HotspotPermanentUser $hotspotPermanentUser,
