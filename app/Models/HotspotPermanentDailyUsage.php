@@ -25,4 +25,17 @@ class HotspotPermanentDailyUsage extends Model
     {
         return $this->belongsTo(HotspotPermanentUser::class, 'hotspot_permanent_user_id');
     }
+
+    public function getTotalUsageBytesAttribute(): int
+    {
+        return (int) ($this->bytes_in ?? 0)
+            + (int) ($this->bytes_out ?? 0);
+    }
+
+    public function getDataValueAttribute(): int
+    {
+        return \App\Services\HotspotDataValueService::calculate(
+            $this->total_usage_bytes
+        );
+    }
 }

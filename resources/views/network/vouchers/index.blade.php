@@ -596,6 +596,17 @@
             font-weight: 700;
         }
 
+        .permanent-type {
+            display: inline-flex;
+            margin-top: 5px;
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
         /*
             |--------------------------------------------------------------------------
             | CUSTOMER NAME
@@ -995,7 +1006,7 @@
 
                         @if($tab === 'online')
 
-                            Users currently connected to the hotspot,
+                            Voucher and permanent users currently connected to the hotspot,
                             ordered by highest data usage.
 
                         @elseif($tab === 'offline')
@@ -1177,9 +1188,14 @@
 
                                             <td>
 
-                                                <strong>
-                                                    {{ $voucher->username }}
-                                                </strong>
+                                                <strong>{{ $voucher->username }}</strong>
+
+                                                @if($voucher->is_permanent ?? false)
+                                                    <br>
+                                                    <span class="permanent-type">
+                                                        {{ $voucher->user_type === 'staff' ? 'Staff' : 'Daily Customer' }}
+                                                    </span>
+                                                @endif
 
                                             </td>
 
@@ -1264,7 +1280,9 @@
                                                     TZS
                                                     {{
                             number_format(
-                                $voucher->data_value
+                                ($voucher->is_permanent ?? false)
+                                    ? $voucher->estimated_data_value
+                                    : $voucher->data_value
                             )
                                                             }}
 
@@ -1295,13 +1313,23 @@
 
                                             <td>
 
-                                                <a href="{{ route('hotspot-vouchers.show', $voucher) }}" class="details-button">
+                                                @if($voucher->is_permanent ?? false)
+                                                    <a href="{{ route('hotspot-permanent-users.index') }}" class="details-button">
 
-                                                    <i class="fa-regular fa-eye"></i>
+                                                        <i class="fa-solid fa-users"></i>
 
-                                                    Details
+                                                        Permanent
 
-                                                </a>
+                                                    </a>
+                                                @else
+                                                    <a href="{{ route('hotspot-vouchers.show', $voucher) }}" class="details-button">
+
+                                                        <i class="fa-regular fa-eye"></i>
+
+                                                        Details
+
+                                                    </a>
+                                                @endif
 
                                             </td>
 

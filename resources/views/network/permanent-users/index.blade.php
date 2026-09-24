@@ -68,7 +68,7 @@
         <div class="panel-head"><h2>Users ({{ $users->count() }})</h2><span class="muted">Usage date: {{ $today }}</span></div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>User</th><th>Type</th><th>Status</th><th>Phone / MAC</th><th>IP</th><th>Today's Usage</th><th>Last Seen</th><th>Outstanding</th><th>Actions</th></tr></thead>
+                <thead><tr><th>User</th><th>Type</th><th>Status</th><th>Phone / MAC</th><th>IP</th><th>Today's Usage</th><th>Estimated Value</th><th>Last Seen</th><th>Outstanding</th><th>Actions</th></tr></thead>
                 <tbody>
                 @forelse($users as $user)
                     @php
@@ -83,6 +83,7 @@
                         <td>{{ $user->phone ?: '-' }}<br><span class="muted">{{ $user->mac_address }}</span></td>
                         <td>{{ $user->last_ip ?: '-' }}</td>
                         <td><strong>{{ $formatBytes($totalBytes) }}</strong><br><span class="muted">Up {{ $formatBytes($usage?->bytes_in ?? 0) }} / Down {{ $formatBytes($usage?->bytes_out ?? 0) }}</span></td>
+                        <td class="money">TZS {{ number_format((int) ($usage?->data_value ?? 0)) }}</td>
                         <td>{{ $user->last_seen_at?->timezone('Africa/Dar_es_Salaam')->format('d/m/Y H:i') ?? '-' }}</td>
                         <td class="money">TZS {{ number_format(max(0, $balance), 0) }}</td>
                         <td>
@@ -106,7 +107,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" style="text-align:center;padding:35px">No permanent users registered.</td></tr>
+                    <tr><td colspan="10" style="text-align:center;padding:35px">No permanent users registered.</td></tr>
                 @endforelse
                 </tbody>
             </table>

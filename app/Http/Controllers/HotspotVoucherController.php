@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\HotspotCustomer;
 use App\Models\HotspotManualSmsMessage;
+use App\Models\HotspotPermanentUser;
 use App\Models\HotspotProfile;
 use App\Models\HotspotVoucher;
 use App\Models\NetworkRouter;
@@ -410,6 +411,47 @@ class HotspotVoucherController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | ONLINE PERMANENT USERS
+        |--------------------------------------------------------------------------
+        |
+        | Permanent users use MikroTik bypass instead of voucher usernames, so
+        | they do not appear in /ip/hotspot/active. Their online state and daily
+        | usage are maintained by HotspotPermanentUsageService from hotspot hosts.
+        |
+        */
+
+        $today = now('Africa/Dar_es_Salaam')->toDateString();
+
+        $permanentOnlineUsers = HotspotPermanentUser::query()
+            ->with('router')
+            ->with(['usages' => fn ($query) => $query->whereDate('usage_date', $today)])
+            ->where('enabled', true)
+            ->where('is_online', true)
+            ->get()
+            ->map(function (HotspotPermanentUser $user) {
+                $usage = $user->usages->first();
+                $displayBytes = (int) ($usage?->total_usage_bytes ?? 0);
+
+                $user->setAttribute('is_permanent', true);
+                $user->setAttribute('username', 'Permanent');
+                $user->setAttribute('comment', $user->name);
+                $user->setAttribute('online_ip', $user->last_ip);
+                $user->setAttribute('online_mac', $user->mac_address);
+                $user->setAttribute(
+                    'online_uptime',
+                    $this->formatDuration((int) ($usage?->last_uptime_seconds ?? 0))
+                );
+                $user->setAttribute('display_bytes', $displayBytes);
+                $user->setAttribute(
+                    'estimated_data_value',
+                    (int) ($usage?->data_value ?? 0)
+                );
+
+                return $user;
+            });
+
+        /*
+        |--------------------------------------------------------------------------
         | COUNTS
         |--------------------------------------------------------------------------
         */
@@ -420,7 +462,7 @@ class HotspotVoucherController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $onlineCount =
+        $voucherOnlineCount =
             $allVouchers
                 ->filter(function ($voucher) {
                     return
@@ -429,6 +471,8 @@ class HotspotVoucherController extends Controller
                         ! (bool) ($voucher->is_expired_now ?? false);
                 })
                 ->count();
+
+        $onlineCount = $voucherOnlineCount + $permanentOnlineUsers->count();
 
         /*
         |--------------------------------------------------------------------------
@@ -515,6 +559,10 @@ class HotspotVoucherController extends Controller
                     })
                     ->sortByDesc(function ($voucher) {
                         return (int) ($voucher->display_bytes ?? 0);
+                    })
+                    ->concat($permanentOnlineUsers)
+                    ->sortByDesc(function ($user) {
+                        return (int) ($user->display_bytes ?? 0);
                     })
                     ->values();
 
@@ -616,6 +664,25 @@ class HotspotVoucherController extends Controller
                     $invitationService->eligibleCount(),
             ]
         );
+    }
+
+    private function formatDuration(int $seconds): ?string
+    {
+        if ($seconds <= 0) {
+            return null;
+        }
+
+        $days = intdiv($seconds, 86400);
+        $seconds %= 86400;
+        $hours = intdiv($seconds, 3600);
+        $seconds %= 3600;
+        $minutes = intdiv($seconds, 60);
+        $seconds %= 60;
+
+        return ($days > 0 ? $days . 'd' : '')
+            . ($hours > 0 ? $hours . 'h' : '')
+            . ($minutes > 0 ? $minutes . 'm' : '')
+            . $seconds . 's';
     }
 
     /*
