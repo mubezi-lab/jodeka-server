@@ -66,18 +66,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | BEEM BPAY
+    | PALM PESA PAYMENT API V2
     |--------------------------------------------------------------------------
     |
-    | Used for Beem Bpay Checkout API integration.
+    | Used for JODEKA Hotspot mobile money payment integration.
     |
     */
 
-    'bpay' => [
-        'api_key' => env('BEEM_BPAY_API_KEY'),
-        'secret_key' => env('BEEM_BPAY_SECRET_KEY'),
-        'secure_token' => env('BEEM_BPAY_SECURE_TOKEN'),
-        'base_url' => env('BEEM_BPAY_BASE_URL', 'https://checkout.beem.africa'),
+    'palmpesa' => [
+        'base_url' => env(
+            'PALMPESA_BASE_URL',
+            'https://palmpesa.co.tz'
+        ),
+
+        'api_token' => env('PALMPESA_API_TOKEN'),
+
+        'callback_url' => env(
+            'PALMPESA_CALLBACK_URL',
+            'https://jodeka.co.tz/api/palmpesa/callback'
+        ),
+
+        'timeout' => 30,
     ],
 
     'bagambakamo' => [

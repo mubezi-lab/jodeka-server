@@ -10,11 +10,11 @@ use App\Http\Controllers\Api\LivestockApiController;
 use App\Http\Controllers\Api\LoanApiController;
 use App\Http\Controllers\Api\SavingApiController;
 use App\Http\Controllers\Api\BagambakamoSmsController;
-use App\Http\Controllers\Api\BpayCallbackController;
-use App\Http\Controllers\Api\BpayCheckoutController;
 
 use App\Http\Controllers\HotspotPaymentSmsController;
 use App\Http\Controllers\HotspotPaymentVerificationController;
+use App\Http\Controllers\PalmPesaHotspotPaymentController;
+use App\Http\Controllers\PalmPesaCallbackController;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,6 +43,47 @@ Route::post('/hotspot/payments/sms', [
 
 /*
 |--------------------------------------------------------------------------
+| HOTSPOT PAYMENT - PALM PESA
+|--------------------------------------------------------------------------
+|
+| Starts a Palm Pesa mobile-money payment request for a hotspot package.
+|
+| This route does NOT generate a voucher immediately.
+| Voucher generation only continues after Palm Pesa confirms
+| that the transaction status is COMPLETED.
+|
+| Final URL:
+| /api/hotspot/payments/palmpesa
+|
+*/
+
+Route::post('/hotspot/payments/palmpesa', [
+    PalmPesaHotspotPaymentController::class,
+    'store'
+])->name('hotspot.palmpesa.payment');
+
+/*
+|--------------------------------------------------------------------------
+| PALM PESA CALLBACK
+|--------------------------------------------------------------------------
+|
+| Palm Pesa sends final payment results to this endpoint.
+|
+| JODEKA verifies the transaction with Palm Pesa before treating
+| the payment as completed and allowing voucher generation.
+|
+| Final URL:
+| https://jodeka.co.tz/api/palmpesa/callback
+|
+*/
+
+Route::post(
+    '/palmpesa/callback',
+    PalmPesaCallbackController::class
+)->name('palmpesa.callback');
+
+/*
+|--------------------------------------------------------------------------
 | BAGAMBAKAMO M-KOBA SMS
 |--------------------------------------------------------------------------
 |
@@ -65,7 +106,7 @@ Route::post('/bagambakamo/sms', [
 |--------------------------------------------------------------------------
 |
 | Public endpoint used by the Jodeka WiFi captive portal.
-| Customer enters the payment reference number after paying.
+| Customer enters the payment phone/reference information after paying.
 |
 */
 
@@ -73,38 +114,6 @@ Route::post('/hotspot/payments/verify', [
     HotspotPaymentVerificationController::class,
     'verify'
 ]);
-
-/*
-|--------------------------------------------------------------------------
-| BEEM BPAY CHECKOUT
-|--------------------------------------------------------------------------
-|
-| Starts a new Beem BPAY Checkout transaction.
-|
-| Final URL:
-| /api/bpay/checkout
-|
-*/
-
-Route::post('/bpay/checkout', [
-    BpayCheckoutController::class,
-    'store'
-])->name('bpay.checkout');
-
-/*
-|--------------------------------------------------------------------------
-| BEEM BPAY CALLBACK
-|--------------------------------------------------------------------------
-|
-| Receives payment status callbacks from Beem BPAY Checkout.
-|
-| Final URL:
-| https://jodeka.co.tz/api/bpay/callback
-|
-*/
-
-Route::post('/bpay/callback', BpayCallbackController::class)
-    ->name('bpay.callback');
 
 /*
 |--------------------------------------------------------------------------
