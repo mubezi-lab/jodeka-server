@@ -101,6 +101,10 @@ class BagambakamoSmsController extends Controller
                 $sms
             );
 
+            if (($data['direction'] ?? null) === 'new_member') {
+                return $this->processNewMember($data);
+            }
+
             if (
                 ($data['direction'] ?? null)
                 ===
@@ -146,6 +150,52 @@ class BagambakamoSmsController extends Controller
         }
     }
 
+
+    /**
+     * Register a new Bagambakamo member from a recognized M-Koba SMS.
+     */
+    private function processNewMember(array $data): JsonResponse
+    {
+        $name = trim((string) ($data['member_name'] ?? ''));
+        $phone = $this->normalizePhone($data['member_phone'] ?? null);
+
+        if ($name === '' || ! preg_match('/^255[67]\d{8}$/', $phone)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid new member details.',
+            ], 422);
+        }
+
+        // Avoid duplicate registration when the same SMS is forwarded again.
+        $member = Member::query()->where('phone', $phone)->first();
+
+        if ($member) {
+            return response()->json([
+                'success' => true,
+                'duplicate' => true,
+                'message' => 'Member already registered.',
+                'member_id' => $member->id,
+                'member_name' => $member->full_name,
+                'member_phone' => $member->phone,
+            ]);
+        }
+
+        $member = Member::create([
+            'full_name' => $name,
+            'phone' => $phone,
+            'status' => 'active',
+            'join_date' => now('Africa/Dar_es_Salaam')->toDateString(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'duplicate' => false,
+            'message' => 'New Bagambakamo member registered successfully.',
+            'member_id' => $member->id,
+            'member_name' => $member->full_name,
+            'member_phone' => $member->phone,
+        ], 201);
+    }
 
     private function processContribution(
         array $data,

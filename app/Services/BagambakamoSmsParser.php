@@ -27,6 +27,35 @@ class BagambakamoSmsParser
 
         /*
         |--------------------------------------------------------------------------
+        | NEW MEMBER REGISTRATION
+        |--------------------------------------------------------------------------
+        */
+
+        if (preg_match(
+            '/^(.+?)\s*\(\s*(255[67]\d{8})\s*\)\s*'
+            . 'amekuwa mwanachama wa kikundi chenu cha\s+'
+            . 'BAGAMBA\s+KAMO\.?\s*$/iu',
+            $sms,
+            $matches
+        )) {
+            return [
+                'direction' => 'new_member',
+                'transaction_type' => 'registration',
+                'format' => 'new_member_registration',
+                'reference' => null,
+                'member_name' => trim($matches[1]),
+                'member_phone' => $matches[2],
+                'recipient_name' => null,
+                'recipient_phone' => null,
+                'amount' => null,
+                'paid_at' => null,
+                'account_balance' => null,
+                'raw_sms' => $sms,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | INCOMING CONTRIBUTIONS
         |--------------------------------------------------------------------------
         */
